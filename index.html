@@ -51,6 +51,11 @@
   #map { height: clamp(460px, 74vh, 880px); width: 100%; background: var(--grey-soft); z-index: 0; }
   @media (max-width: 880px) { #map { height: clamp(340px, 52vh, 520px); } }
   .leaflet-container { font-family: var(--body); }
+  .map-pane.is-fullscreen { position: fixed; inset: 0; z-index: 2500; width: 100vw; height: 100vh; border: none; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; }
+  .map-pane.is-fullscreen #map { flex: 1 1 auto; height: auto; }
+  .fs-ctrl a { display: flex; align-items: center; justify-content: center; color: var(--ink); }
+  .fs-ctrl a:hover { color: var(--accent); }
+  .fs-ctrl svg { width: 16px; height: 16px; }
   .start-pin, .finish-pin { border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.45); }
   .start-pin { display: grid; place-items: center; color: #fff; font-family: var(--display); font-weight: 700; font-size: 11px; }
   .photo-pin { width: 40px; height: 40px; border-radius: 9px; border: 2px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,.5); background-size: cover; background-position: center; cursor: pointer; transition: transform .12s; }
@@ -287,6 +292,20 @@
   lbNext.addEventListener("click",function(e){ e.stopPropagation(); lbNav(1); });
   document.addEventListener("keydown",function(e){ if(!lb.classList.contains("open"))return;
     if(e.key==="Escape")lbClose(); else if(e.key==="ArrowLeft")lbNav(-1); else if(e.key==="ArrowRight")lbNav(1); });
+
+  /* ---- Full-screen map toggle ---- */
+  var EXPAND_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+  var COMPRESS_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
+  var mapPaneEl=document.querySelector('.map-pane'), fsBtn=null;
+  function setFullscreen(on){ mapPaneEl.classList.toggle('is-fullscreen',on); if(fsBtn){ fsBtn.innerHTML=on?COMPRESS_SVG:EXPAND_SVG; fsBtn.title=on?'Exit full screen':'Full screen'; }
+    document.body.style.overflow=on?'hidden':''; setTimeout(function(){ map.invalidateSize(); },80); }
+  var Fullscreen=L.Control.extend({ options:{position:'topleft'},
+    onAdd:function(){ var c=L.DomUtil.create('div','leaflet-bar fs-ctrl'); var a=L.DomUtil.create('a','',c);
+      a.href='#'; a.setAttribute('role','button'); a.setAttribute('aria-label','Full screen'); a.title='Full screen'; a.innerHTML=EXPAND_SVG; fsBtn=a;
+      L.DomEvent.on(a,'click',L.DomEvent.stop); L.DomEvent.on(a,'click',function(){ setFullscreen(!mapPaneEl.classList.contains('is-fullscreen')); });
+      return c; } });
+  map.addControl(new Fullscreen());
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape' && mapPaneEl.classList.contains('is-fullscreen') && !lb.classList.contains('open')) setFullscreen(false); });
   function farApart(a,b){var dx=(a[1]-b[1])*Math.cos(a[0]*Math.PI/180),dy=a[0]-b[0];return Math.sqrt(dx*dx+dy*dy)*111000>120;}
 
   function showRoute(route){
