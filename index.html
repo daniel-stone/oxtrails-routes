@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OX Trails — Routes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+  :root {
+    --bg: #F5F5F5;
+    --card: #FFFFFF;
+    --ink: #0C0C0C;
+    --ink-soft: #55565A;
+    --ink-faint: #8B8C90;
+    --line: #E3E3E3;
+    --line-soft: #ECECEC;
+    --grey: #D9D9D9;
+    --grey-soft: #EDEDED;
+    --route: #0C0C0C;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 10px 30px rgba(0,0,0,.06);
+    --card-radius: 14px;
+    --btn-radius: 15px;
+    --display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --body: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--body); font-weight: 400; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { width: 100%; max-width: 100%; margin: 0 auto; padding: 30px clamp(16px, 3.5vw, 48px) 54px; }
+
+  /* ---- Section header (styled like an OX Trails content section) ---- */
+  .masthead { max-width: 760px; margin-bottom: 30px; }
+  .eyebrow { font-family: var(--body); font-weight: 500; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 12px; }
+  .masthead h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1.03; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+  .masthead p { color: var(--ink-soft); font-size: 15.5px; margin: 16px 0 0; max-width: 62ch; font-weight: 300; }
+
+  /* ---- Board layout ---- */
+  .board { display: grid; grid-template-columns: 1.32fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 880px) { .board { grid-template-columns: 1fr; } }
+
+  /* ---- Map ---- */
+  .map-pane { position: sticky; top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--card-radius); overflow: hidden; box-shadow: var(--shadow); }
+  @media (max-width: 880px) { .map-pane { position: static; } }
+  .map-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .map-head .mh-name { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+  .map-head .mh-sub { font-size: 12px; color: var(--ink-faint); font-weight: 400; }
+  #map { height: clamp(460px, 74vh, 880px); width: 100%; background: var(--grey-soft); z-index: 0; }
+  @media (max-width: 880px) { #map { height: clamp(340px, 52vh, 520px); } }
+  .leaflet-container { font-family: var(--body); }
+  .start-pin, .finish-pin { border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.45); }
+  .start-pin { display: grid; place-items: center; color: #fff; font-family: var(--display); font-weight: 700; font-size: 11px; }
+  .photo-pin { width: 40px; height: 40px; border-radius: 9px; border: 2px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,.5); background-size: cover; background-position: center; cursor: pointer; transition: transform .12s; }
+  .photo-pin:hover { transform: scale(1.08); }
+  .leaflet-popup-content { margin: 12px 12px 10px; }
+  .photo-pop img { width: 100%; height: auto; border-radius: 8px; display: block; }
+  .photo-pop img { cursor: zoom-in; }
+  .photo-pop p { font-family: var(--body); font-size: 12.5px; color: var(--ink); margin: 9px 1px 2px; font-weight: 400; line-height: 1.4; }
+  .photo-pop .pop-view { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-family: var(--body); font-size: 12px; font-weight: 500; padding: 7px 12px; border-radius: 10px; border: none; background: var(--ink); color: #fff; cursor: pointer; }
+  .photo-pop .pop-view:hover { background: #000; }
+  .photo-pop .pop-view svg { width: 14px; height: 14px; }
+
+  /* ---- Lightbox (full-screen photo viewer) ---- */
+  .lightbox { position: fixed; inset: 0; z-index: 3000; display: none; align-items: center; justify-content: center; padding: clamp(14px, 3vw, 40px); background: rgba(8,9,8,.9); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+  .lightbox.open { display: flex; }
+  .lb-fig { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 94vw; max-height: 92vh; }
+  .lb-fig img { max-width: 94vw; max-height: 84vh; width: auto; height: auto; object-fit: contain; border-radius: 10px; box-shadow: 0 12px 48px rgba(0,0,0,.55); background: #1a1a1a; }
+  .lb-fig figcaption { color: #F3F2EE; font-family: var(--body); font-weight: 300; font-size: 14px; text-align: center; max-width: 62ch; line-height: 1.45; }
+  .lb-close, .lb-nav { position: fixed; border: none; background: rgba(255,255,255,.13); color: #fff; cursor: pointer; display: grid; place-items: center; line-height: 1; transition: background .15s; -webkit-tap-highlight-color: transparent; }
+  .lb-close:hover, .lb-nav:hover { background: rgba(255,255,255,.28); }
+  .lb-close { top: 18px; right: 20px; width: 44px; height: 44px; border-radius: 50%; font-size: 27px; }
+  .lb-nav { top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; font-size: 30px; }
+  .lb-prev { left: 20px; } .lb-next { right: 20px; }
+  @media (max-width: 640px) { .lb-nav { width: 42px; height: 42px; font-size: 25px; } .lb-prev { left: 8px; } .lb-next { right: 8px; } .lb-fig img { max-height: 78vh; } }
+  .lightbox:focus-visible, .lb-close:focus-visible, .lb-nav:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  /* ---- Route list ---- */
+  .routes-pane { display: flex; flex-direction: column; gap: 14px; }
+  .rp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .rp-head h2 { margin: 0; font-family: var(--display); font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+  .filters { display: flex; gap: 7px; flex-wrap: wrap; }
+  .filters button { font-family: var(--body); font-weight: 500; font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink-soft); transition: all .15s; }
+  .filters button:hover { border-color: var(--ink); color: var(--ink); }
+  .filters button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .route { border: 1px solid var(--line); border-radius: var(--card-radius); background: var(--card); overflow: hidden; transition: border-color .15s, box-shadow .15s; }
+  .route.active { border-color: var(--ink); box-shadow: var(--shadow); }
+  .route-top { display: flex; width: 100%; text-align: left; gap: 15px; padding: 16px; cursor: pointer; background: none; border: none; color: inherit; font: inherit; align-items: center; }
+  .idx { flex: none; width: 52px; height: 52px; border-radius: 12px; background: var(--ink); color: #fff; display: grid; place-items: center; line-height: 1; }
+  .idx .d { font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .idx .u { font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; opacity: .72; margin-top: 2px; }
+  .route-id .name { font-family: var(--display); font-weight: 600; font-size: 16px; letter-spacing: -.01em; line-height: 1.25; }
+  .route-id .meta { display: flex; gap: 7px 16px; flex-wrap: wrap; margin-top: 6px; font-size: 12.5px; color: var(--ink-soft); font-weight: 400; }
+  .route-id .meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .route-id .type-chip { display: inline-flex; align-items: center; gap: 5px; }
+  .chev { margin-left: auto; color: var(--ink-faint); transition: transform .2s; flex: none; align-self: center; }
+  .route.active .chev { transform: rotate(180deg); color: var(--ink); }
+
+  .route-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .28s ease; }
+  .route.active .route-body { grid-template-rows: 1fr; }
+  .route-body-inner { overflow: hidden; }
+  .rb-pad { padding: 2px 16px 17px; border-top: 1px solid var(--line-soft); margin-top: 2px; }
+  .desc { color: var(--ink-soft); font-size: 14px; margin: 14px 0; font-weight: 300; }
+  .desc strong { color: var(--ink); font-weight: 500; }
+
+  .notes-lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; margin: 0 0 6px; }
+  .directions { color: var(--ink-soft); font-size: 13.5px; font-weight: 300; margin: 0 0 16px; }
+  .meta-line { color: var(--ink-soft); font-size: 13px; font-weight: 300; margin: 0 0 16px; }
+  .meta-line strong { color: var(--ink); font-weight: 500; }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--body); font-size: 13px; font-weight: 500; padding: 11px 18px; border-radius: var(--btn-radius); cursor: pointer; border: 1px solid transparent; text-decoration: none; letter-spacing: .01em; transition: all .15s; }
+  .btn svg { width: 16px; height: 16px; }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #000; }
+  .btn-ghost { background: var(--grey); color: var(--ink); }
+  .btn-ghost:hover { background: #cececa; }
+
+  footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-faint); font-size: 12.5px; font-weight: 300; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">Oxfordshire · Off-road cycling</p>
+    <h1>Routes</h1>
+    <p>A growing collection of off-road rides across the Oxfordshire countryside. Choose a route to see it on the map, read the description, and download the GPX for your device.</p>
+  </header>
+
+  <div class="board">
+    <section class="map-pane" aria-label="Route map">
+      <div class="map-head">
+        <span class="mh-name" id="mhName">Select a route</span>
+        <span class="mh-sub" id="mhSub">Oxfordshire</span>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <section class="routes-pane" aria-label="Route list">
+      <div class="rp-head">
+        <h2>All routes <span id="routeCount" style="color:var(--ink)"></span></h2>
+        <div class="filters" id="filters">
+          <button data-f="all" class="on">All</button>
+          <button data-f="circular">Circular</button>
+          <button data-f="ptp">Point-to-point</button>
+        </div>
+      </div>
+      <div id="routeList"></div>
+    </section>
+  </div>
+
+  <footer>
+    <span>OX Trails · Improving the landscape of off-road cycling in Oxfordshire.</span>
+    <span>Map data © OpenStreetMap contributors</span>
+  </footer>
+</div>
+
+<div id="lightbox" class="lightbox" aria-hidden="true" role="dialog" aria-label="Photo viewer">
+  <button class="lb-close" type="button" aria-label="Close">&times;</button>
+  <button class="lb-nav lb-prev" type="button" aria-label="Previous photo">&lsaquo;</button>
+  <button class="lb-nav lb-next" type="button" aria-label="Next photo">&rsaquo;</button>
+  <figure class="lb-fig">
+    <img id="lbImg" alt="">
+    <figcaption id="lbCap"></figcaption>
+  </figure>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------------------------------------------------------
+     Routes. Each route holds its real GPX-derived track + elevation.
+     To add a route: append an object with the same shape.
+  ----------------------------------------------------------------*/
+  var ROUTES = [
+    {
+      id: "drayton-loop",
+      name: "Drayton Loop",
+      type: "circular",
+      distance: 14.3, ascent: 39, timeHrs: 1.2,
+      surface: "Earth, gravel & tarmac byways and bridleways",
+      start: "Peep-O-Day Lane (NCN5), Abingdon",
+      desc: "A short lap of the local byways and bridleways around <strong>Drayton and Sutton Courtenay</strong>. The route runs on a variety of earth, gravel and tarmac surfaces, and is non-technical and suitable for hybrid bikes and upwards. Parts of the route (particularly those west of the A34) can get a little muddy in winter and are best avoided after prolonged periods of rain.",
+      directions: "The start follows NCN5 / Peep-O-Day Lane, but soon veers off through the gravel pits. The short section in Sutton Wick requires a little thoughtful navigation — cycle to the end of the road and keep heading left. Head to Sutton Courtenay and follow Mill Lane as it disappears and turns into a track towards Steventon. After navigating through Drayton, keep following the farm track out to the route of the Wilts and Berks Canal. As you turn off the track you'll follow the boundary of a grass field that can get very boggy. Once past this, the surface improves and you can use a concrete track and bridleways to find your way back to Mill Road in Abingdon.",
+      track: [[51.657127,-1.284347],[51.657132,-1.284338],[51.657049,-1.284238],[51.656665,-1.284222],[51.655188,-1.28456],[51.6547,-1.284917],[51.654247,-1.285304],[51.653893,-1.285637],[51.653389,-1.286113],[51.652469,-1.287106],[51.652103,-1.28748],[51.651618,-1.287931],[51.651349,-1.288209],[51.650673,-1.288817],[51.650089,-1.289079],[51.64905,-1.289626],[51.648993,-1.289709],[51.649062,-1.29021],[51.649198,-1.291218],[51.649347,-1.292444],[51.649428,-1.293044],[51.649826,-1.295971],[51.650014,-1.297352],[51.650131,-1.298356],[51.650245,-1.298964],[51.650278,-1.299137],[51.650316,-1.299237],[51.650254,-1.299355],[51.649911,-1.299836],[51.649619,-1.30006],[51.649409,-1.300162],[51.648509,-1.299938],[51.648479,-1.300017],[51.648406,-1.300463],[51.648129,-1.301227],[51.64796,-1.301815],[51.64793,-1.302361],[51.647864,-1.302984],[51.647797,-1.303739],[51.647762,-1.304682],[51.64777,-1.304781],[51.647888,-1.305322],[51.647955,-1.305776],[51.648022,-1.305887],[51.648163,-1.306017],[51.648202,-1.30613],[51.647536,-1.306163],[51.647377,-1.306105],[51.647291,-1.306073],[51.647159,-1.305893],[51.646831,-1.30557],[51.646565,-1.305476],[51.646506,-1.305484],[51.646258,-1.305518],[51.64616,-1.30533],[51.645473,-1.304282],[51.645189,-1.30392],[51.644958,-1.303647],[51.644542,-1.303157],[51.64429,-1.302969],[51.644151,-1.302871],[51.644297,-1.302431],[51.644526,-1.301542],[51.64467,-1.300919],[51.644772,-1.300352],[51.644804,-1.300074],[51.644839,-1.299525],[51.644848,-1.299139],[51.64485,-1.298463],[51.64483,-1.298158],[51.644797,-1.297881],[51.644743,-1.297557],[51.644678,-1.297237],[51.644579,-1.296814],[51.644422,-1.296206],[51.644151,-1.295267],[51.643971,-1.294738],[51.64347,-1.293446],[51.643381,-1.293162],[51.643307,-1.292863],[51.643266,-1.29266],[51.643226,-1.2924],[51.643207,-1.292141],[51.643211,-1.291868],[51.643229,-1.291508],[51.64323,-1.291235],[51.643211,-1.290965],[51.643179,-1.290748],[51.643134,-1.290525],[51.643055,-1.290234],[51.642773,-1.289352],[51.642721,-1.289143],[51.64252,-1.288151],[51.642356,-1.287501],[51.642286,-1.287154],[51.642232,-1.286806],[51.642193,-1.286459],[51.642184,-1.286043],[51.642104,-1.285043],[51.641982,-1.284001],[51.642014,-1.283426],[51.642019,-1.283034],[51.642022,-1.282827],[51.642059,-1.282484],[51.642129,-1.282024],[51.642252,-1.281315],[51.642406,-1.280627],[51.642453,-1.280335],[51.642486,-1.280022],[51.642489,-1.27984],[51.642471,-1.279455],[51.642416,-1.27895],[51.642377,-1.278238],[51.642299,-1.27722],[51.642277,-1.276867],[51.64224,-1.27677],[51.642196,-1.276685],[51.642062,-1.276444],[51.642024,-1.276398],[51.641872,-1.276302],[51.641805,-1.276282],[51.641701,-1.276281],[51.641583,-1.276309],[51.64149,-1.276349],[51.64139,-1.276414],[51.640517,-1.277094],[51.640293,-1.277301],[51.640129,-1.277476],[51.639805,-1.277718],[51.639476,-1.277934],[51.639269,-1.278043],[51.639118,-1.278108],[51.638952,-1.278174],[51.638233,-1.278421],[51.637981,-1.27849],[51.63751,-1.278681],[51.637591,-1.279045],[51.637759,-1.279597],[51.637946,-1.28032],[51.637964,-1.280438],[51.637966,-1.280535],[51.638037,-1.281008],[51.638052,-1.281183],[51.638079,-1.281297],[51.638121,-1.281394],[51.638145,-1.281478],[51.638157,-1.281591],[51.638144,-1.281761],[51.638086,-1.281995],[51.638076,-1.28211],[51.638088,-1.282238],[51.638142,-1.282433],[51.638259,-1.282737],[51.638361,-1.282975],[51.638409,-1.283072],[51.638485,-1.283263],[51.638608,-1.283636],[51.638805,-1.284292],[51.638954,-1.285039],[51.639175,-1.285877],[51.639401,-1.286816],[51.639865,-1.288292],[51.640094,-1.289099],[51.640422,-1.290892],[51.640541,-1.291614],[51.640647,-1.29245],[51.640749,-1.293245],[51.640829,-1.294554],[51.640861,-1.295368],[51.640875,-1.296579],[51.640855,-1.297354],[51.640833,-1.297836],[51.640796,-1.298227],[51.640746,-1.298589],[51.640664,-1.299013],[51.640451,-1.299971],[51.64034,-1.30062],[51.640261,-1.30132],[51.640244,-1.301474],[51.640131,-1.302986],[51.64008,-1.303801],[51.639918,-1.305999],[51.63996,-1.306703],[51.639934,-1.307484],[51.639931,-1.307567],[51.639955,-1.307905],[51.640078,-1.308497],[51.640136,-1.309201],[51.640163,-1.309613],[51.640218,-1.3101],[51.64026,-1.311223],[51.640253,-1.311569],[51.640238,-1.311923],[51.640219,-1.312345],[51.640246,-1.312883],[51.640273,-1.313048],[51.640329,-1.313295],[51.640389,-1.313477],[51.640469,-1.313684],[51.640522,-1.31377],[51.640581,-1.313943],[51.640588,-1.314087],[51.641386,-1.314226],[51.641721,-1.314241],[51.6417,-1.314833],[51.641666,-1.315482],[51.641675,-1.315596],[51.641701,-1.315665],[51.641766,-1.315746],[51.641826,-1.315778],[51.642027,-1.315787],[51.642839,-1.315821],[51.643375,-1.315875],[51.643345,-1.316552],[51.643323,-1.317369],[51.643347,-1.318786],[51.643347,-1.318939],[51.643326,-1.319209],[51.643223,-1.320149],[51.643231,-1.320335],[51.643403,-1.321085],[51.643489,-1.321654],[51.643528,-1.322404],[51.643558,-1.322994],[51.643524,-1.324412],[51.643594,-1.326001],[51.643836,-1.327317],[51.643858,-1.327584],[51.643926,-1.328384],[51.644047,-1.329043],[51.644417,-1.329956],[51.644996,-1.331995],[51.645126,-1.332326],[51.64516,-1.332441],[51.645461,-1.333474],[51.645628,-1.334357],[51.645799,-1.33497],[51.646104,-1.335829],[51.646407,-1.336737],[51.646478,-1.337025],[51.646492,-1.337085],[51.646471,-1.337241],[51.646401,-1.337412],[51.646353,-1.337649],[51.64637,-1.337819],[51.646847,-1.339979],[51.646827,-1.340423],[51.646898,-1.340789],[51.647638,-1.339861],[51.647885,-1.339552],[51.648538,-1.338983],[51.649878,-1.337878],[51.650391,-1.33739],[51.651024,-1.33645],[51.65122,-1.33613],[51.651653,-1.335421],[51.651879,-1.335302],[51.651914,-1.335225],[51.651901,-1.335017],[51.651954,-1.334831],[51.652438,-1.333871],[51.652657,-1.333479],[51.652769,-1.333302],[51.652982,-1.332867],[51.653279,-1.33233],[51.653475,-1.331977],[51.653505,-1.331797],[51.655319,-1.328374],[51.655825,-1.32742],[51.655845,-1.327307],[51.655792,-1.32721],[51.655459,-1.326899],[51.655216,-1.326765],[51.655276,-1.326562],[51.655459,-1.325435],[51.655649,-1.324389],[51.655849,-1.323603],[51.656135,-1.322731],[51.656338,-1.322238],[51.656549,-1.321821],[51.656557,-1.321739],[51.655337,-1.318562],[51.655212,-1.318302],[51.654954,-1.318027],[51.654875,-1.317859],[51.654847,-1.317729],[51.654711,-1.316921],[51.654695,-1.316864],[51.654797,-1.316811],[51.655031,-1.316735],[51.655382,-1.316564],[51.655815,-1.316353],[51.65688,-1.315906],[51.658014,-1.3154],[51.659068,-1.314885],[51.659292,-1.314791],[51.659451,-1.314567],[51.659542,-1.314379],[51.659673,-1.313992],[51.659723,-1.313846],[51.660048,-1.312568],[51.660431,-1.311306],[51.660751,-1.310216],[51.661073,-1.308781],[51.661307,-1.308386],[51.661319,-1.308395],[51.661902,-1.308822],[51.661981,-1.308871],[51.662164,-1.308947],[51.662256,-1.308925],[51.662286,-1.308859],[51.662323,-1.308644],[51.662391,-1.308252],[51.662484,-1.307845],[51.662697,-1.307287],[51.662926,-1.306953],[51.663152,-1.306712],[51.663279,-1.30649],[51.663408,-1.306222],[51.663731,-1.3053],[51.663791,-1.305082],[51.663857,-1.304712],[51.664078,-1.303993],[51.664331,-1.303116],[51.664475,-1.302601],[51.664617,-1.301878],[51.664749,-1.301084],[51.664798,-1.300448],[51.664872,-1.299684],[51.664901,-1.299397],[51.664907,-1.298948],[51.664891,-1.298441],[51.66487,-1.298268],[51.664834,-1.298097]],
+      ele: [50.5,50.5,50.5,50.3,50.1,50.1,50.7,51.2,51.3,51.3,51.7,51.7,51.7,52.2,52.1,52.0,52.0,51.7,51.4,47.9,49.1,49.1,50.4,52.4,53.4,54.4,54.7,54.8,55.1,55.2,55.3,55.7,55.8,56.1,56.9,57.5,58.0,58.9,59.2,60.0,60.1,60.6,61.1,61.2,61.4,61.6,61.7,62.0,62.2,62.1,61.8,61.6,61.5,61.4,61.2,60.0,59.5,59.5,59.4,59.3,59.2,59.0,58.5,58.3,58.0,57.7,57.2,57.0,57.0,57.0,57.1,57.2,57.3,57.4,57.2,56.4,56.4,56.5,56.4,56.4,56.3,56.0,55.6,55.2,54.7,54.3,53.9,53.9,53.9,53.9,54.0,54.1,54.3,54.3,54.1,54.0,53.9,53.7,53.4,52.9,52.9,52.9,52.8,52.8,52.8,53.3,53.7,53.9,54.1,54.3,54.6,54.6,54.1,53.4,53.4,53.3,53.2,53.1,53.1,53.1,53.2,53.3,53.4,53.5,53.6,54.0,54.0,54.4,55.2,55.5,55.8,56.0,56.4,57.1,57.1,57.0,57.0,56.7,56.0,55.9,55.9,55.6,55.4,55.2,55.1,55.0,54.9,54.7,54.5,54.4,54.3,54.2,54.1,54.0,54.0,54.0,54.0,54.3,55.0,56.3,56.9,56.9,56.9,56.8,57.1,57.3,57.6,58.0,58.0,58.3,58.7,58.8,58.8,58.9,58.9,58.9,58.7,58.6,58.5,58.0,57.8,58.5,58.8,58.8,58.9,58.9,59.0,59.0,59.0,59.1,59.2,59.6,60.1,60.5,61.1,61.2,61.4,61.5,61.6,61.7,61.7,61.6,60.7,60.3,59.8,59.4,59.3,59.3,59.3,59.3,59.4,59.4,59.4,59.4,59.3,59.2,59.2,59.2,57.7,57.5,57.4,57.3,57.2,57.1,57.0,56.8,56.6,56.5,56.5,56.4,56.3,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,56.0,55.9,55.8,55.7,55.4,55.3,55.2,55.1,55.0,55.0,55.0,54.9,54.8,54.3,54.0,54.0,54.0,54.0,54.0,54.0,54.0,54.0,54.0,54.0,54.0,54.1,54.4,55.8,57.1,57.7,59.4,60.1,60.7,60.8,62.1,62.2,62.4,62.4,62.5,62.3,62.3,62.2,62.1,62.0,61.8,61.4,60.9,60.5,60.4,60.3,60.3,60.2,60.1,59.8,59.4,59.1,58.8,57.8,56.9,55.9,55.7,55.1,55.2,55.3,55.5,55.8,56.2,55.7,55.2,54.9,54.5,54.0,53.0,53.2,53.7,54.3,56.0,56.7,56.4,55.7,55.2,54.6,54.0,54.0,54.0,54.0,53.9]
+    },
+    {
+      id: "goring-white-horse",
+      name: "Goring to the White Horse (The Ridgeway)",
+      type: "ptp",
+      distance: 35.0, ascent: 521, timeHrs: 4.0,
+      surface: "Chalk ridge track — gravel, grass & eroded farm tracks",
+      start: "Goring-on-Thames railway station → White Horse (Uffington)",
+      desc: "One of the oldest roads in the UK — a Bronze Age trade route that follows the high ground of the <strong>North Wessex Downs</strong>, passing ancient monuments and open farmland. The route starts at Goring railway station (you can skip the ride to the start by catching a regular local train). Once over the Thames, a short stretch of road leads to the climb onto the hills. The first 6 miles or so are on nicely surfaced gravel farm tracks; as you approach the A34 the surface deteriorates and can be muddy after wet periods. West of the A34 the terrain is more mixed — grass, gravel and heavily eroded farm tracks, with some sections worn down to the chalk that get very slippery in the wet. Be especially careful on the descent west of Sparsholt Firs.",
+      directions: "Do stop at: the Hugh Frederick Grosvenor Memorial, Scutchamer Knob, Lord Wantage Monument, Segsbury Camp, Uffington Castle and the White Horse. The route ends at a National Trust car park — pick your own way home, as Didcot and Swindon railway stations are about the same distance away.<br><br>The Ridgeway National Trail is well signposted, so navigation is straightforward. There are very few options for water: there is a tap hidden in a hedge near Hill Barn (SU 337 855), but drink at your own risk. There are no cafes or toilets along the route, and little shelter from the weather — you will be riding into the prevailing wind, so dress appropriately. There are small shops in Uffington, Childrey, Letcombe Regis and Lambourne, but reaching them adds several miles and around 150 m of climbing to the day.",
+      track: [[51.52225,-1.13289],[51.52276,-1.13335],[51.52319,-1.134],[51.5226,-1.13662],[51.52266,-1.13748],[51.52271,-1.1382],[51.52287,-1.13862],[51.52295,-1.14058],[51.52289,-1.14523],[51.52273,-1.14654],[51.52261,-1.14798],[51.52294,-1.14824],[51.52318,-1.14825],[51.52326,-1.14814],[51.52355,-1.14901],[51.52498,-1.14917],[51.5253,-1.14916],[51.52549,-1.1494],[51.52723,-1.15055],[51.52868,-1.15106],[51.5291,-1.15153],[51.52945,-1.15231],[51.52979,-1.15436],[51.52974,-1.15663],[51.52924,-1.15883],[51.52924,-1.16096],[51.52932,-1.16281],[51.52909,-1.16434],[51.52901,-1.16624],[51.52884,-1.16786],[51.52881,-1.17075],[51.52895,-1.17304],[51.52864,-1.17609],[51.52803,-1.18012],[51.52781,-1.18174],[51.52728,-1.18738],[51.52724,-1.20036],[51.52732,-1.2018],[51.52725,-1.20472],[51.5272,-1.20768],[51.52747,-1.20932],[51.52781,-1.21058],[51.52801,-1.21125],[51.52806,-1.21238],[51.52816,-1.21313],[51.52837,-1.21403],[51.52865,-1.21449],[51.52894,-1.21492],[51.52897,-1.21574],[51.5291,-1.21736],[51.5294,-1.21906],[51.52947,-1.22064],[51.52976,-1.22229],[51.52995,-1.22286],[51.53145,-1.22559],[51.532,-1.22661],[51.53249,-1.2274],[51.53293,-1.22856],[51.53345,-1.23041],[51.53365,-1.23072],[51.53414,-1.23108],[51.53523,-1.23288],[51.53662,-1.23659],[51.5375,-1.24033],[51.53777,-1.24197],[51.53772,-1.24678],[51.53752,-1.24998],[51.53748,-1.25082],[51.53742,-1.25173],[51.53755,-1.25263],[51.53739,-1.25319],[51.53724,-1.25402],[51.53704,-1.25568],[51.537,-1.25645],[51.53524,-1.26226],[51.53407,-1.26603],[51.53386,-1.26682],[51.53548,-1.26962],[51.53714,-1.27159],[51.53752,-1.2721],[51.53868,-1.27348],[51.53901,-1.27402],[51.53913,-1.27444],[51.53932,-1.27568],[51.53967,-1.27672],[51.5424,-1.28014],[51.54338,-1.28148],[51.54442,-1.28366],[51.54502,-1.28525],[51.54663,-1.28995],[51.54738,-1.29176],[51.54768,-1.29304],[51.54791,-1.29329],[51.54811,-1.29353],[51.54802,-1.29437],[51.54802,-1.29485],[51.54866,-1.29642],[51.54944,-1.29891],[51.55095,-1.3033],[51.55307,-1.30957],[51.55362,-1.31127],[51.55392,-1.3121],[51.55445,-1.31406],[51.55521,-1.31712],[51.5559,-1.3199],[51.55661,-1.32215],[51.55857,-1.32761],[51.56051,-1.33308],[51.56061,-1.33373],[51.56077,-1.33435],[51.56092,-1.33481],[51.56156,-1.33763],[51.56203,-1.33983],[51.56218,-1.34041],[51.56237,-1.34076],[51.56254,-1.34188],[51.56298,-1.34446],[51.56331,-1.34715],[51.56357,-1.34967],[51.56359,-1.35086],[51.56362,-1.35194],[51.56337,-1.35446],[51.56328,-1.35539],[51.56304,-1.35747],[51.56289,-1.35863],[51.56284,-1.35899],[51.56264,-1.3599],[51.56188,-1.36273],[51.56054,-1.36782],[51.55973,-1.37109],[51.55931,-1.37371],[51.55873,-1.37682],[51.55868,-1.37727],[51.55864,-1.38076],[51.55864,-1.38193],[51.55851,-1.38477],[51.55825,-1.3858],[51.55762,-1.38764],[51.55692,-1.38988],[51.5568,-1.39053],[51.55649,-1.39157],[51.55581,-1.39328],[51.55521,-1.39522],[51.55505,-1.39591],[51.55455,-1.39792],[51.55443,-1.39835],[51.55425,-1.39901],[51.55365,-1.40212],[51.55349,-1.40352],[51.5534,-1.40477],[51.55381,-1.40713],[51.55416,-1.40937],[51.55429,-1.41028],[51.55497,-1.41181],[51.55589,-1.41404],[51.55697,-1.41643],[51.5572,-1.41689],[51.55711,-1.41725],[51.55609,-1.41785],[51.55602,-1.41826],[51.55616,-1.42001],[51.55621,-1.42124],[51.55626,-1.42331],[51.55628,-1.42488],[51.55653,-1.42713],[51.55666,-1.42842],[51.55664,-1.43091],[51.55731,-1.43259],[51.55698,-1.43521],[51.55661,-1.43809],[51.55631,-1.4403],[51.55598,-1.44287],[51.55572,-1.4446],[51.5551,-1.44917],[51.55487,-1.45106],[51.55467,-1.45222],[51.5546,-1.45476],[51.55467,-1.45522],[51.55446,-1.45762],[51.55432,-1.46018],[51.55432,-1.46121],[51.55419,-1.46369],[51.55402,-1.46678],[51.55397,-1.46707],[51.55398,-1.46791],[51.55406,-1.46837],[51.55409,-1.46924],[51.55426,-1.47135],[51.55482,-1.47735],[51.5549,-1.47895],[51.55514,-1.48159],[51.55554,-1.48602],[51.55572,-1.48708],[51.55633,-1.4895],[51.55649,-1.4904],[51.55661,-1.4907],[51.55706,-1.49342],[51.55728,-1.49425],[51.55846,-1.49663],[51.55929,-1.49833],[51.55963,-1.49904],[51.56037,-1.50065],[51.56078,-1.50126],[51.56113,-1.50187],[51.56184,-1.50305],[51.56257,-1.50405],[51.5634,-1.50502],[51.56385,-1.50584],[51.5647,-1.50704],[51.56709,-1.51276],[51.5673,-1.51338],[51.57021,-1.51812],[51.57034,-1.51864],[51.57037,-1.52052],[51.57021,-1.52159],[51.57025,-1.52366],[51.57045,-1.52454],[51.57074,-1.52538],[51.57117,-1.52676],[51.57147,-1.52769],[51.57178,-1.52882],[51.57295,-1.53226],[51.57377,-1.53441],[51.57459,-1.5363],[51.57524,-1.53765],[51.57622,-1.54147],[51.57649,-1.54375],[51.57654,-1.54624],[51.57641,-1.54806],[51.57625,-1.55141],[51.57633,-1.55304],[51.57629,-1.55513],[51.57605,-1.55761],[51.57579,-1.55955],[51.57566,-1.56047],[51.57535,-1.56246],[51.57501,-1.56392],[51.5745,-1.5662],[51.57411,-1.56794],[51.57341,-1.56998],[51.57275,-1.57238],[51.57172,-1.57582],[51.57368,-1.57692],[51.5759,-1.5779],[51.57691,-1.57868]]
+    },
+    {
+      id: "banbury-oxford",
+      name: "Banbury to Oxford (Oxford Canal)",
+      type: "ptp",
+      distance: 43.9, ascent: 120, timeHrs: 4.5,
+      surface: "Canal towpath — mostly single-track (hybrid / gravel)",
+      start: "Banbury town centre → Oxford (near the railway stations)",
+      photos: [
+        { lat: 52.015518, lon: -1.279491, src: "photos/banbury-02.jpg", thumb: "photos/banbury-02-thumb.jpg", caption: "Leaving Banbury under the M40, looking towards King's Sutton" },
+        { lat: 51.99657,  lon: -1.281896, src: "photos/banbury-03.jpg", thumb: "photos/banbury-03-thumb.jpg", caption: "Near Aynho" },
+        { lat: 51.970477, lon: -1.278454, src: "photos/banbury-04.jpg", thumb: "photos/banbury-04-thumb.jpg", caption: "Above Chisnell Farm" },
+        { lat: 51.965051, lon: -1.28143,  src: "photos/banbury-05.jpg", thumb: "photos/banbury-05-thumb.jpg", caption: "Deep Lock Cottage" },
+        { lat: 51.900186, lon: -1.293764, src: "photos/banbury-01.jpg", thumb: "photos/banbury-01-thumb.jpg", caption: "On the Oxford Canal towpath, near Lower Heyford" },
+        { lat: 51.729277, lon: -1.239897, src: "photos/banbury-06.jpg", thumb: "photos/banbury-06-thumb.jpg", caption: "Iffley Lock, south of Oxford" }
+      ],
+      desc: "A near-flat, easy-to-follow ride along the <strong>Oxford Canal</strong> towpath, from the centre of Banbury to the centre of Oxford. Route finding is easy — just keep to the towpath. Start in Banbury town centre, a short ride from the railway station; the canal soon leaves the town and heads into the Cherwell Valley, with the railway line a constant companion (make a diversion to see the Souldern viaduct).",
+      directions: "The towpath is mostly single-track and non-technical — a hybrid or gravel bike will be fine. Some parts are narrow, eroded or overgrown, so if you aren't completely confident in your balance there will be some hike-a-bike. Avoid the route after heavy rain: if the river Cherwell is in flood everything will be very wet, and the railway, canal and river mean there are a few stretches with no easy way back to a road.<br><br>There are no shops right on the route, but there are water points and facilities at many of the moorings (Aynho, Lower Heyford, Kings Ground, Thrupp) — though they may be locked (get a key from the Canal &amp; River Trust) or in use. The one cafe directly on the route is Annie's at Thrupp, which is well worth the stop.<br><br>As you get closer to Oxford the towpath becomes paved and busy. If it's too crowded to cycle, cross on one of the bridges and ride through the city centre. The route ends a short distance from Oxford railway station.",
+      track: [[52.062804,-1.331614],[52.062759,-1.331457],[52.062493,-1.330783],[52.062033,-1.330329],[52.061443,-1.329953],[52.060038,-1.329996],[52.058704,-1.330193],[52.057527,-1.330146],[52.057178,-1.32997],[52.055098,-1.325956],[52.053472,-1.323276],[52.050338,-1.318487],[52.048921,-1.316743],[52.046848,-1.314592],[52.045888,-1.312896],[52.045469,-1.311356],[52.045101,-1.310183],[52.044774,-1.308792],[52.044196,-1.307225],[52.043245,-1.3054],[52.042998,-1.304148],[52.042216,-1.302971],[52.040557,-1.300583],[52.04045,-1.300556],[52.039675,-1.299407],[52.037872,-1.298723],[52.03558,-1.297921],[52.033705,-1.297083],[52.032334,-1.296539],[52.031255,-1.296383],[52.029539,-1.296119],[52.028679,-1.295498],[52.02783,-1.294781],[52.027269,-1.29421],[52.027276,-1.293018],[52.026217,-1.289075],[52.026043,-1.288325],[52.025606,-1.286957],[52.025206,-1.2867],[52.02444,-1.28684],[52.023888,-1.286892],[52.023123,-1.287453],[52.022888,-1.287552],[52.02241,-1.287296],[52.021099,-1.285781],[52.020142,-1.284876],[52.018752,-1.284277],[52.017988,-1.283497],[52.017398,-1.282165],[52.015518,-1.279491],[52.015045,-1.279247],[52.014597,-1.279696],[52.01412,-1.281136],[52.014088,-1.283017],[52.013951,-1.284395],[52.013716,-1.285352],[52.013364,-1.28682],[52.01297,-1.287363],[52.011656,-1.288247],[52.010512,-1.288658],[52.009686,-1.288123],[52.008762,-1.287021],[52.008289,-1.285936],[52.00722,-1.281949],[52.006402,-1.281415],[52.005998,-1.280856],[52.005552,-1.280667],[52.005048,-1.280794],[52.005004,-1.28102],[52.004231,-1.281169],[52.000208,-1.281784],[51.999292,-1.281634],[51.99657,-1.281896],[51.995173,-1.281838],[51.993498,-1.280566],[51.992027,-1.279383],[51.988242,-1.277217],[51.987026,-1.276556],[51.98673,-1.276369],[51.983015,-1.274457],[51.982245,-1.274255],[51.980765,-1.274985],[51.979524,-1.275435],[51.978232,-1.2754],[51.97665,-1.274555],[51.973199,-1.275831],[51.971284,-1.277305],[51.970477,-1.278454],[51.969958,-1.280313],[51.969464,-1.282784],[51.968849,-1.283735],[51.968285,-1.283974],[51.966181,-1.282909],[51.965512,-1.282056],[51.965051,-1.28143],[51.964854,-1.281081],[51.963427,-1.279149],[51.963278,-1.278914],[51.9622,-1.277899],[51.961135,-1.277373],[51.958856,-1.277324],[51.958171,-1.277658],[51.95738,-1.279016],[51.957048,-1.279668],[51.956172,-1.280698],[51.955453,-1.281525],[51.954696,-1.284599],[51.954047,-1.288685],[51.953671,-1.28952],[51.953129,-1.290298],[51.952312,-1.29133],[51.9518,-1.291551],[51.949984,-1.290569],[51.948005,-1.289444],[51.946677,-1.289074],[51.946415,-1.28899],[51.945319,-1.289062],[51.944242,-1.289878],[51.942594,-1.290783],[51.940837,-1.292256],[51.93987,-1.293695],[51.939139,-1.293935],[51.938738,-1.293258],[51.938498,-1.292785],[51.938205,-1.29235],[51.93765,-1.2904],[51.936628,-1.288512],[51.935807,-1.287794],[51.934199,-1.286672],[51.933276,-1.286344],[51.932848,-1.285695],[51.932439,-1.284945],[51.931587,-1.284208],[51.930866,-1.283852],[51.9301,-1.283344],[51.929601,-1.283386],[51.928446,-1.283263],[51.927456,-1.283033],[51.926955,-1.28331],[51.926417,-1.284094],[51.924894,-1.284763],[51.923624,-1.285159],[51.922222,-1.28683],[51.921624,-1.288182],[51.920935,-1.289094],[51.920783,-1.290048],[51.920901,-1.291087],[51.920676,-1.293318],[51.920799,-1.295624],[51.92077,-1.297096],[51.920089,-1.298397],[51.919778,-1.298593],[51.918592,-1.299211],[51.918298,-1.299298],[51.916282,-1.29918],[51.91442,-1.299176],[51.914214,-1.298998],[51.913683,-1.298722],[51.912437,-1.298175],[51.911074,-1.297977],[51.909269,-1.298246],[51.908302,-1.298721],[51.906076,-1.299823],[51.904939,-1.299916],[51.904316,-1.298586],[51.903738,-1.297267],[51.903291,-1.296598],[51.901911,-1.295396],[51.900027,-1.293835],[51.899502,-1.293456],[51.896793,-1.291104],[51.895906,-1.290794],[51.894254,-1.289808],[51.893377,-1.289747],[51.892528,-1.291947],[51.891727,-1.293815],[51.889985,-1.296022],[51.889281,-1.296599],[51.88804,-1.296858],[51.887347,-1.296365],[51.886101,-1.29481],[51.885464,-1.293967],[51.882113,-1.288892],[51.879798,-1.287475],[51.877966,-1.286563],[51.877041,-1.285702],[51.875557,-1.285583],[51.874774,-1.286059],[51.873424,-1.288102],[51.872847,-1.2898],[51.872186,-1.29187],[51.871513,-1.292839],[51.871019,-1.294272],[51.870224,-1.296717],[51.869099,-1.298529],[51.868869,-1.298635],[51.868487,-1.298705],[51.867683,-1.298008],[51.866176,-1.295754],[51.864904,-1.293992],[51.863692,-1.292747],[51.863128,-1.292862],[51.861603,-1.294],[51.861092,-1.295335],[51.86101,-1.296861],[51.86107,-1.298852],[51.861192,-1.301228],[51.861096,-1.302219],[51.860929,-1.30398],[51.860849,-1.304324],[51.860698,-1.305203],[51.860349,-1.306855],[51.859779,-1.307482],[51.859241,-1.307444],[51.857784,-1.30617],[51.857239,-1.305714],[51.856431,-1.30517],[51.855809,-1.303579],[51.855926,-1.302619],[51.855385,-1.30178],[51.854898,-1.300242],[51.855034,-1.299221],[51.854649,-1.298822],[51.854052,-1.298741],[51.853851,-1.297647],[51.852826,-1.297204],[51.851728,-1.296388],[51.851003,-1.295206],[51.850061,-1.294152],[51.849326,-1.293587],[51.849281,-1.293385],[51.848236,-1.293233],[51.847587,-1.294038],[51.847321,-1.296253],[51.847307,-1.297778],[51.847415,-1.299557],[51.846881,-1.301175],[51.845813,-1.303305],[51.845362,-1.303783],[51.844578,-1.304349],[51.844018,-1.304308],[51.843527,-1.303633],[51.84266,-1.302861],[51.841429,-1.301902],[51.840352,-1.30038],[51.84005,-1.300704],[51.840181,-1.300781],[51.840068,-1.30102],[51.838542,-1.303583],[51.837927,-1.304517],[51.837133,-1.304993],[51.836155,-1.305041],[51.835346,-1.304438],[51.834448,-1.303721],[51.832781,-1.302076],[51.832308,-1.301446],[51.831607,-1.301532],[51.829838,-1.303224],[51.828635,-1.303728],[51.827433,-1.303667],[51.825632,-1.302554],[51.824615,-1.301541],[51.82357,-1.300635],[51.82258,-1.299628],[51.822299,-1.299398],[51.821398,-1.298391],[51.820313,-1.297568],[51.819273,-1.296248],[51.818054,-1.294567],[51.817583,-1.293994],[51.816529,-1.292268],[51.816438,-1.291733],[51.815983,-1.290421],[51.815564,-1.2896],[51.814352,-1.288204],[51.813532,-1.288173],[51.812016,-1.288112],[51.810482,-1.288431],[51.808947,-1.288613],[51.807217,-1.288946],[51.804677,-1.289229],[51.804109,-1.289374],[51.801195,-1.290361],[51.800498,-1.291361],[51.800154,-1.291803],[51.798224,-1.292239],[51.796923,-1.292588],[51.795509,-1.293112],[51.792906,-1.293737],[51.792465,-1.29388],[51.792254,-1.293964],[51.791733,-1.293372],[51.790429,-1.291802],[51.789923,-1.291317],[51.789355,-1.29093],[51.787546,-1.289094],[51.785756,-1.286624],[51.785195,-1.285907],[51.784899,-1.285642],[51.782855,-1.283499],[51.782122,-1.282626],[51.781284,-1.281874],[51.779882,-1.27964],[51.779158,-1.278377],[51.778718,-1.277842],[51.776599,-1.275793],[51.775329,-1.27444],[51.773713,-1.272799],[51.771203,-1.271065],[51.770125,-1.270542],[51.768416,-1.270012],[51.767425,-1.269914],[51.765375,-1.270504],[51.764657,-1.270843],[51.76292,-1.271028],[51.762328,-1.270937],[51.762021,-1.270971],[51.759775,-1.270903],[51.758505,-1.270835],[51.756989,-1.270253],[51.756422,-1.26985],[51.756178,-1.269542],[51.756093,-1.269291],[51.755329,-1.268049],[51.753851,-1.265095],[51.753605,-1.264871]],
+      ele: [97.8,97.8,96.0,94.9,93.6,94.9,96.0,97.1,97.3,96.0,94.5,92.5,91.7,92.9,93.8,94.4,94.8,94.2,93.8,93.2,93.0,92.8,91.9,91.7,90.6,88.7,89.0,90.1,91.4,92.4,91.8,91.5,91.2,91.0,90.8,89.2,88.9,88.2,88.0,87.4,87.1,86.5,86.3,86.2,87.5,88.4,89.5,89.2,88.8,87.2,86.7,86.2,85.2,84.3,85.3,85.9,87.0,87.6,89.1,91.1,92.5,94.4,90.5,87.2,86.1,85.4,84.7,84.0,83.8,83.4,82.2,82.1,81.8,81.6,81.4,80.8,81.2,81.4,81.2,80.3,80.4,80.4,80.4,79.9,80.5,81.7,82.4,82.5,81.8,80.9,80.4,80.1,79.0,78.6,78.4,78.3,77.6,77.6,78.2,78.7,79.8,80.2,80.7,80.5,80.1,79.8,79.1,78.2,78.0,77.8,77.5,77.6,78.0,78.4,78.6,78.4,77.7,76.8,76.0,76.1,76.2,76.2,76.2,76.3,76.3,76.3,76.4,76.5,76.5,76.6,76.6,76.7,76.9,76.5,75.9,75.5,75.3,75.8,76.0,76.3,77.0,77.5,78.2,78.7,79.1,79.3,79.0,78.2,77.4,76.9,76.3,76.1,75.4,75.2,74.4,73.6,73.5,73.5,73.4,73.2,73.1,73.0,72.8,72.6,72.5,72.4,72.3,72.1,71.9,71.8,71.6,71.5,71.9,72.0,72.3,72.6,73.0,73.2,73.4,73.5,73.8,74.0,75.0,75.7,76.2,76.5,77.0,77.2,78.2,76.0,73.4,71.7,70.1,70.2,69.9,69.9,69.8,69.7,69.3,69.0,68.0,69.1,72.4,74.3,76.6,74.9,72.0,71.0,69.3,69.1,68.0,68.5,68.8,69.0,69.7,70.0,70.3,70.6,70.3,69.9,69.4,69.0,68.8,68.5,68.1,67.5,66.8,66.2,65.5,65.0,65.0,65.1,65.1,65.2,65.5,66.4,67.3,68.5,68.8,68.3,67.9,67.5,66.8,66.0,65.4,65.4,65.7,65.5,66.0,66.7,66.1,65.6,65.1,65.0,65.0,65.7,65.9,65.5,65.3,65.1,64.9,64.6,64.4,64.2,63.8,63.4,63.0,62.6,62.1,62.2,62.7,62.8,62.3,61.9,61.2,60.9,60.5,60.7,60.9,61.0,61.3,60.9,61.6,61.3,61.1,60.5,60.2,60.4,60.8,60.9,61.2,62.0,62.1,62.5,62.8,61.8,62.5,62.5,61.5,58.1,58.1,58.1,58.6,58.9,58.8,58.4,58.1,58.7,60.2,60.8,60.2,60.2,60.1,60.2,60.9,61.0,61.1,58.5,58.5,58.9,60.1,60.7,61.0,60.9,60.7,60.7]
+    }
+  ];
+
+  /* ---- GPX ---- */
+  function esc(s){return String(s).replace(/[<>&'"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c];});}
+  function stripTags(s){return String(s).replace(/<[^>]+>/g,"");}
+  function buildGPX(route){
+    var lines=['<?xml version="1.0" encoding="UTF-8"?>',
+      '<gpx version="1.1" creator="OX Trails — oxtrails.org.uk" xmlns="http://www.topografix.com/GPX/1/1">',
+      '  <metadata><name>'+esc(route.name)+'</name><desc>'+esc(stripTags(route.desc))+'</desc><author><name>OX Trails</name></author></metadata>',
+      '  <trk><name>'+esc(route.name)+'</name><type>cycling</type><trkseg>'];
+    for (var i=0;i<route.track.length;i++){var p=route.track[i];
+      var e=(route.ele&&route.ele[i]!=null)?'<ele>'+route.ele[i].toFixed(1)+'</ele>':'';
+      lines.push('    <trkpt lat="'+p[0].toFixed(6)+'" lon="'+p[1].toFixed(6)+'">'+e+'</trkpt>');}
+    lines.push('  </trkseg></trk>','</gpx>');
+    return lines.join("\n");
+  }
+  function downloadGPX(route){
+    var blob=new Blob([buildGPX(route)],{type:"application/gpx+xml"}), url=URL.createObjectURL(blob);
+    var a=document.createElement("a");a.href=url;a.download=route.id+".gpx";document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1500);
+  }
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+  /* ---- Leaflet map + base layers ---- */
+  var map = L.map('map', { scrollWheelZoom: true, zoomControl: true }).setView([51.65, -1.30], 12);
+  var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+  var cyclosm = L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
+    maxZoom: 20, subdomains:'abc',
+    attribution: '<a href="https://www.cyclosm.org">CyclOSM</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+  var topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 17, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="https://opentopomap.org">OpenTopoMap</a>' });
+  cyclosm.addTo(map);
+  L.control.layers({ "CyclOSM": cyclosm, "OpenStreetMap": osm, "OpenTopoMap": topo }, null, { position:'topright' }).addTo(map);
+
+  // Keep the map correctly tiled when its container changes size
+  // (window resize, responsive reflow, or Squarespace sections/accordions revealing it)
+  if (window.ResizeObserver){ new ResizeObserver(function(){ map.invalidateSize(); }).observe(document.getElementById('map')); }
+  window.addEventListener('load', function(){ map.invalidateSize(); });
+
+  var layerGroup = L.layerGroup().addTo(map);
+  function startIcon(){ return L.divIcon({ className:'', iconSize:[22,22], iconAnchor:[11,11],
+    html:'<div class="start-pin" style="width:22px;height:22px;background:'+css('--ink')+'">S</div>' }); }
+  function finishIcon(){ return L.divIcon({ className:'', iconSize:[22,22], iconAnchor:[11,11],
+    html:'<div class="finish-pin" style="width:22px;height:22px;background:repeating-conic-gradient(#111 0 25%, #fff 0 50%) 50%/8px 8px"></div>' }); }
+  function photoIcon(thumb){ return L.divIcon({ className:'', iconSize:[40,40], iconAnchor:[20,20],
+    html:'<div class="photo-pin" style="background-image:url('+thumb+')"></div>' }); }
+  function escAttr(s){return String(s||'').replace(/"/g,'&quot;');}
+
+  /* ---- Lightbox ---- */
+  var lb=document.getElementById("lightbox"), lbImg=document.getElementById("lbImg"), lbCap=document.getElementById("lbCap");
+  var lbPrev=lb.querySelector(".lb-prev"), lbNext=lb.querySelector(".lb-next");
+  var lbList=[], lbIdx=0;
+  function lbShow(){ var p=lbList[lbIdx]; if(!p)return; lbImg.src=p.src; lbImg.alt=p.caption||""; lbCap.textContent=p.caption||"";
+    var multi=lbList.length>1; lbPrev.style.display=multi?"grid":"none"; lbNext.style.display=multi?"grid":"none"; }
+  function lbOpen(list,idx){ lbList=list||[]; lbIdx=idx||0; lbShow(); lb.classList.add("open"); lb.setAttribute("aria-hidden","false"); }
+  function lbClose(){ lb.classList.remove("open"); lb.setAttribute("aria-hidden","true"); lbImg.removeAttribute("src"); }
+  function lbNav(d){ if(!lbList.length)return; lbIdx=(lbIdx+d+lbList.length)%lbList.length; lbShow(); }
+  lb.addEventListener("click",function(e){ if(e.target===lb) lbClose(); });
+  lb.querySelector(".lb-close").addEventListener("click",lbClose);
+  lbPrev.addEventListener("click",function(e){ e.stopPropagation(); lbNav(-1); });
+  lbNext.addEventListener("click",function(e){ e.stopPropagation(); lbNav(1); });
+  document.addEventListener("keydown",function(e){ if(!lb.classList.contains("open"))return;
+    if(e.key==="Escape")lbClose(); else if(e.key==="ArrowLeft")lbNav(-1); else if(e.key==="ArrowRight")lbNav(1); });
+  function farApart(a,b){var dx=(a[1]-b[1])*Math.cos(a[0]*Math.PI/180),dy=a[0]-b[0];return Math.sqrt(dx*dx+dy*dy)*111000>120;}
+
+  function showRoute(route){
+    layerGroup.clearLayers();
+    if(!route) return;
+    var latlngs = route.track.map(function(p){return [p[0],p[1]];});
+    L.polyline(latlngs, { color:'#ffffff', weight:7, opacity:.9, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
+    L.polyline(latlngs, { color:css('--route'), weight:4, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
+    var a=latlngs[0], b=latlngs[latlngs.length-1];
+    L.marker(a, { icon: startIcon(), title:'Start' }).addTo(layerGroup);
+    if(farApart(a,b)){ L.marker(b, { icon: finishIcon(), title:'Finish' }).addTo(layerGroup); }
+    var bounds=L.latLngBounds(latlngs);
+    if(route.photos){ route.photos.forEach(function(ph,pi){
+      var m=L.marker([ph.lat,ph.lon], { icon: photoIcon(ph.thumb||ph.src), title: ph.caption||'Photo' });
+      var pop=document.createElement('div'); pop.className='photo-pop';
+      pop.innerHTML='<img src="'+escAttr(ph.src)+'" alt="'+escAttr(ph.caption)+'" loading="lazy">'
+        +(ph.caption?'<p>'+ph.caption+'</p>':'')
+        +'<button type="button" class="pop-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg>View full photo</button>';
+      function openFull(){ lbOpen(route.photos, pi); }
+      pop.querySelector('.pop-view').addEventListener('click', openFull);
+      pop.querySelector('img').addEventListener('click', openFull);
+      m.bindPopup(pop, { maxWidth: 260 });
+      m.addTo(layerGroup);
+      bounds.extend([ph.lat,ph.lon]);
+    }); }
+    map.invalidateSize();
+    map.fitBounds(bounds.pad(0.08));
+  }
+
+  /* ---- List ---- */
+  var listEl=document.getElementById("routeList"), activeId=null, filter="all";
+  function mi(km){return km*0.621371;} // distances are stored in km, displayed in miles
+  function render(){
+    listEl.innerHTML="";
+    var shown=ROUTES.filter(function(r){return filter==="all"||r.type===filter;});
+    document.getElementById("routeCount").textContent="· "+shown.length;
+    if(!shown.length){ listEl.innerHTML='<p class="desc" style="padding:6px 2px">No routes in this category yet.</p>'; return; }
+    shown.forEach(function(r){
+      var el=document.createElement("article");
+      el.className="route"+(r.id===activeId?" active":"");
+      el.innerHTML=
+        '<button class="route-top" aria-expanded="'+(r.id===activeId)+'">'
+        +'<span class="idx"><span class="d">'+mi(r.distance).toFixed(1)+'</span><span class="u">miles</span></span>'
+        +'<span class="route-id"><span class="name">'+r.name+'</span><span class="meta">'
+          +'<span class="type-chip">'+(r.type==="circular"?"◯ Circular":"→ Point-to-point")+'</span>'
+        +'</span></span><span class="chev" aria-hidden="true">▾</span></button>'
+        +'<div class="route-body"><div class="route-body-inner"><div class="rb-pad">'
+          +'<p class="desc">'+r.desc+'</p>'
+          +(r.directions?'<p class="notes-lbl">Route notes</p><p class="directions">'+r.directions+'</p>':'')
+          +'<p class="meta-line"><strong>Start:</strong> '+r.start+'<br><strong>Surface:</strong> '+r.surface+' &nbsp;·&nbsp; <strong>Type:</strong> '+(r.type==="circular"?"Circular loop":"Point-to-point")+'</p>'
+          +'<div class="actions">'
+            +'<button class="btn btn-primary" data-dl>'
+              +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>Download GPX</button>'
+          +'</div>'
+        +'</div></div></div>';
+      el.querySelector(".route-top").addEventListener("click",function(){select(r.id);});
+      el.querySelector("[data-dl]").addEventListener("click",function(e){e.stopPropagation();downloadGPX(r);});
+      listEl.appendChild(el);
+    });
+  }
+  function select(id,keepOpen){
+    if(activeId===id&&!keepOpen){activeId=null;setHead(null);render();layerGroup.clearLayers();return;}
+    activeId=id;var cur=ROUTES.filter(function(r){return r.id===id;})[0];
+    setHead(cur);render();showRoute(cur);
+  }
+  function setHead(r){
+    document.getElementById("mhName").textContent=r?r.name:"Select a route";
+    document.getElementById("mhSub").textContent=r?(mi(r.distance).toFixed(1)+" miles · "+(r.type==="circular"?"circular loop":"point-to-point")):"Oxfordshire";
+  }
+  document.getElementById("filters").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
+    filter=b.getAttribute("data-f");[].forEach.call(this.querySelectorAll("button"),function(x){x.classList.toggle("on",x===b);});render();});
+
+  // Hide filter bar until there are enough routes to filter
+  if(ROUTES.length<2){ document.getElementById("filters").style.display="none"; }
+
+  render();
+  select(ROUTES[0].id);
+})();
+</script>
+</body>
+</html>
