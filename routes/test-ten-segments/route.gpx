@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="oxtrails-routes test fixture"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>Ten unconnected bridleway segments (test fixture)</name>
+    <desc>Ten separate stretches of bridleway spread across Oxfordshire, with no
+      connection between them. Geometry traced from OpenStreetMap ways tagged
+      highway=bridleway. Not a rideable route - a fixture for checking how the
+      site renders a track made of disjoint segments. No elevation data.</desc>
+    <copyright author="OpenStreetMap contributors"><license>https://opendatacommons.org/licenses/odbl/</license></copyright>
+    <time>2026-09-13T21:16:23Z</time>
+  </metadata>
+  <trk>
+    <name>Ten unconnected bridleway segments</name>
+    <type>bridleway</type>
+    <!-- segment 1 of 10: near Claydon - OSM way 18112324, 869 m, 15 points -->
+    <trkseg>
+      <trkpt lat="52.1491087" lon="-1.3082724"/>
+      <trkpt lat="52.1490642" lon="-1.3082329"/>
+      <trkpt lat="52.1490281" lon="-1.3082130"/>
+      <trkpt lat="52.1490215" lon="-1.3082124"/>
+      <trkpt lat="52.1489789" lon="-1.3082083"/>
+      <trkpt lat="52.1489234" lon="-1.3082151"/>
+      <trkpt lat="52.1470492" lon="-1.3089813"/>
+      <trkpt lat="52.1462126" lon="-1.3097611"/>
+      <trkpt lat="52.1457473" lon="-1.3100745"/>
+      <trkpt lat="52.1453520" lon="-1.3103829"/>
+      <trkpt lat="52.1451616" lon="-1.3105881"/>
+      <trkpt lat="52.1436954" lon="-1.3130645"/>
+      <trkpt lat="52.1433140" lon="-1.3137708"/>
+      <trkpt lat="52.1432951" lon="-1.3138016"/>
+      <trkpt lat="52.1424991" lon="-1.3142276"/>
+    </trkseg>
+    <!-- segment 2 of 10: near Chastleton - OSM way 157862729, 680 m, 15 points -->
+    <trkseg>
+      <trkpt lat="51.9589082" lon="-1.6491779"/>
+      <trkpt lat="51.9587991" lon="-1.6496768"/>
+      <trkpt lat="51.9586603" lon="-1.6501113"/>
+      <trkpt lat="51.9583297" lon="-1.6509643"/>
+      <trkpt lat="51.9577938" lon="-1.6522228"/>
+      <trkpt lat="51.9576881" lon="-1.6525232"/>
+      <trkpt lat="51.9575628" lon="-1.6533514"/>
+      <trkpt lat="51.9574669" lon="-1.6544029"/>
+      <trkpt lat="51.9575429" lon="-1.6555509"/>
+      <trkpt lat="51.9575661" lon="-1.6562160"/>
+      <trkpt lat="51.9575264" lon="-1.6564843"/>
+      <trkpt lat="51.9574302" lon="-1.6567450"/>
+      <trkpt lat="51.9573178" lon="-1.6569649"/>
+      <trkpt lat="51.9571492" lon="-1.6581022"/>
+      <trkpt lat="51.9570975" lon="-1.6583326"/>
+    </trkseg>
+    <!-- segment 3 of 10: near Godington - OSM way 23982455, 792 m, 10 points -->
+    <trkseg>
+      <trkpt lat="51.9380431" lon="-1.0562015"/>
+      <trkpt lat="51.9380736" lon="-1.0571168"/>
+      <trkpt lat="51.9383831" lon="-1.0587547"/>
+      <trkpt lat="51.9386095" lon="-1.0595245"/>
+      <trkpt lat="51.9392672" lon="-1.0608313"/>
+      <trkpt lat="51.9391741" lon="-1.0609745"/>
+      <trkpt lat="51.9395216" lon="-1.0617596"/>
+      <trkpt lat="51.9401829" lon="-1.0633900"/>
+      <trkpt lat="51.9412254" lon="-1.0646254"/>
+      <trkpt lat="51.9417300" lon="-1.0654527"/>
+    </trkseg>
+    <!-- segment 4 of 10: near Middle Barton - OSM way 37741518, 1605 m, 28 points -->
+    <trkseg>
+      <trkpt lat="51.9313237" lon="-1.3627754"/>
+      <trkpt lat="51.9313939" lon="-1.3628068"/>
+      <trkpt lat="51.9319125" lon="-1.3630387"/>
+      <trkpt lat="51.9322836" lon="-1.3633653"/>
+      <trkpt lat="51.9325434" lon="-1.3636696"/>
+      <trkpt lat="51.9329442" lon="-1.3637537"/>
+      <trkpt lat="51.9339264" lon="-1.3640407"/>
+      <trkpt lat="51.9341887" lon="-1.3640951"/>
+      <trkpt lat="51.9342876" lon="-1.3640481"/>
+      <trkpt lat="51.9343767" lon="-1.3638477"/>
+      <trkpt lat="51.9344955" lon="-1.3633554"/>
+      <trkpt lat="51.9347255" lon="-1.3628630"/>
+      <trkpt lat="51.9353911" lon="-1.3614874"/>
+      <trkpt lat="51.9362211" lon="-1.3602725"/>
+      <trkpt lat="51.9367121" lon="-1.3595998"/>
+      <trkpt lat="51.9368055" lon="-1.3593573"/>
+      <trkpt lat="51.9371558" lon="-1.3587536"/>
+      <trkpt lat="51.9376882" lon="-1.3579263"/>
+      <trkpt lat="51.9381434" lon="-1.3572692"/>
+      <trkpt lat="51.9384482" lon="-1.3567269"/>
+      <trkpt lat="51.9385393" lon="-1.3566418"/>
+      <trkpt lat="51.9391943" lon="-1.3562137"/>
+      <trkpt lat="51.9397943" lon="-1.3557931"/>
+      <trkpt lat="51.9404283" lon="-1.3553107"/>
+      <trkpt lat="51.9410344" lon="-1.3549007"/>
+      <trkpt lat="51.9425127" lon="-1.3539036"/>
+      <trkpt lat="51.9430910" lon="-1.3534737"/>
+      <trkpt lat="51.9431616" lon="-1.3534670"/>
+    </trkseg>
+    <!-- segment 5 of 10: near Cumnor - OSM way 38696403, 768 m, 13 points -->
+    <trkseg>
+      <trkpt lat="51.7416791" lon="-1.2994784"/>
+      <trkpt lat="51.7416047" lon="-1.2995556"/>
+      <trkpt lat="51.7412008" lon="-1.3003024"/>
+      <trkpt lat="51.7404680" lon="-1.3018407"/>
+      <trkpt lat="51.7403315" lon="-1.3020420"/>
+      <trkpt lat="51.7402282" lon="-1.3020665"/>
+      <trkpt lat="51.7401304" lon="-1.3022325"/>
+      <trkpt lat="51.7397676" lon="-1.3028854"/>
+      <trkpt lat="51.7391413" lon="-1.3039779"/>
+      <trkpt lat="51.7388590" lon="-1.3044748"/>
+      <trkpt lat="51.7383969" lon="-1.3052196"/>
+      <trkpt lat="51.7370402" lon="-1.3074500"/>
+      <trkpt lat="51.7369693" lon="-1.3075629"/>
+    </trkseg>
+    <!-- segment 6 of 10: near Broughton Poggs - OSM way 239319347, 857 m, 13 points -->
+    <trkseg>
+      <trkpt lat="51.7351414" lon="-1.6665857"/>
+      <trkpt lat="51.7360030" lon="-1.6677202"/>
+      <trkpt lat="51.7362010" lon="-1.6680590"/>
+      <trkpt lat="51.7368321" lon="-1.6706932"/>
+      <trkpt lat="51.7369538" lon="-1.6710779"/>
+      <trkpt lat="51.7370981" lon="-1.6714002"/>
+      <trkpt lat="51.7372793" lon="-1.6715386"/>
+      <trkpt lat="51.7375211" lon="-1.6717133"/>
+      <trkpt lat="51.7377044" lon="-1.6718773"/>
+      <trkpt lat="51.7378772" lon="-1.6720936"/>
+      <trkpt lat="51.7393940" lon="-1.6743349"/>
+      <trkpt lat="51.7400477" lon="-1.6755664"/>
+      <trkpt lat="51.7401200" lon="-1.6756558"/>
+    </trkseg>
+    <!-- segment 7 of 10: near Sydenham - OSM way 37296940, 1327 m, 42 points -->
+    <trkseg>
+      <trkpt lat="51.7145652" lon="-0.9506484"/>
+      <trkpt lat="51.7145122" lon="-0.9510437"/>
+      <trkpt lat="51.7144255" lon="-0.9514817"/>
+      <trkpt lat="51.7143721" lon="-0.9517730"/>
+      <trkpt lat="51.7142837" lon="-0.9521179"/>
+      <trkpt lat="51.7141727" lon="-0.9523335"/>
+      <trkpt lat="51.7139317" lon="-0.9526443"/>
+      <trkpt lat="51.7138253" lon="-0.9527301"/>
+      <trkpt lat="51.7136551" lon="-0.9527129"/>
+      <trkpt lat="51.7133277" lon="-0.9525403"/>
+      <trkpt lat="51.7132404" lon="-0.9525776"/>
+      <trkpt lat="51.7131440" lon="-0.9527909"/>
+      <trkpt lat="51.7129717" lon="-0.9531892"/>
+      <trkpt lat="51.7128671" lon="-0.9533654"/>
+      <trkpt lat="51.7127648" lon="-0.9535048"/>
+      <trkpt lat="51.7121416" lon="-0.9542573"/>
+      <trkpt lat="51.7117049" lon="-0.9547749"/>
+      <trkpt lat="51.7111408" lon="-0.9556522"/>
+      <trkpt lat="51.7108815" lon="-0.9553255"/>
+      <trkpt lat="51.7106610" lon="-0.9549874"/>
+      <trkpt lat="51.7104855" lon="-0.9546870"/>
+      <trkpt lat="51.7102728" lon="-0.9544725"/>
+      <trkpt lat="51.7099856" lon="-0.9542579"/>
+      <trkpt lat="51.7097303" lon="-0.9539575"/>
+      <trkpt lat="51.7094005" lon="-0.9537257"/>
+      <trkpt lat="51.7091688" lon="-0.9535048"/>
+      <trkpt lat="51.7092098" lon="-0.9530070"/>
+      <trkpt lat="51.7092101" lon="-0.9523137"/>
+      <trkpt lat="51.7092535" lon="-0.9510042"/>
+      <trkpt lat="51.7089431" lon="-0.9509105"/>
+      <trkpt lat="51.7087499" lon="-0.9508502"/>
+      <trkpt lat="51.7086134" lon="-0.9508075"/>
+      <trkpt lat="51.7083581" lon="-0.9507560"/>
+      <trkpt lat="51.7079858" lon="-0.9506959"/>
+      <trkpt lat="51.7075763" lon="-0.9507388"/>
+      <trkpt lat="51.7072571" lon="-0.9508075"/>
+      <trkpt lat="51.7069912" lon="-0.9509105"/>
+      <trkpt lat="51.7066721" lon="-0.9510650"/>
+      <trkpt lat="51.7065285" lon="-0.9510650"/>
+      <trkpt lat="51.7064356" lon="-0.9510282"/>
+      <trkpt lat="51.7064176" lon="-0.9510148"/>
+      <trkpt lat="51.7063454" lon="-0.9509609"/>
+    </trkseg>
+    <!-- segment 8 of 10: near Blewbury - OSM way 929031005, 1607 m, 16 points -->
+    <trkseg>
+      <trkpt lat="51.5413524" lon="-1.2505786"/>
+      <trkpt lat="51.5414209" lon="-1.2503574"/>
+      <trkpt lat="51.5414375" lon="-1.2503037"/>
+      <trkpt lat="51.5415459" lon="-1.2500221"/>
+      <trkpt lat="51.5417127" lon="-1.2498933"/>
+      <trkpt lat="51.5420564" lon="-1.2497700"/>
+      <trkpt lat="51.5423927" lon="-1.2496178"/>
+      <trkpt lat="51.5432413" lon="-1.2492985"/>
+      <trkpt lat="51.5443683" lon="-1.2488472"/>
+      <trkpt lat="51.5449919" lon="-1.2485839"/>
+      <trkpt lat="51.5470820" lon="-1.2476197"/>
+      <trkpt lat="51.5472133" lon="-1.2475648"/>
+      <trkpt lat="51.5472575" lon="-1.2475464"/>
+      <trkpt lat="51.5529966" lon="-1.2452316"/>
+      <trkpt lat="51.5534603" lon="-1.2448990"/>
+      <trkpt lat="51.5547519" lon="-1.2430953"/>
+    </trkseg>
+    <!-- segment 9 of 10: near Ashbury - OSM way 102682974, 1252 m, 19 points -->
+    <trkseg>
+      <trkpt lat="51.5240929" lon="-1.5894891"/>
+      <trkpt lat="51.5241104" lon="-1.5898702"/>
+      <trkpt lat="51.5242094" lon="-1.5920052"/>
+      <trkpt lat="51.5243454" lon="-1.5945717"/>
+      <trkpt lat="51.5244980" lon="-1.5985111"/>
+      <trkpt lat="51.5245070" lon="-1.5996396"/>
+      <trkpt lat="51.5245023" lon="-1.5997968"/>
+      <trkpt lat="51.5245000" lon="-1.5998740"/>
+      <trkpt lat="51.5245737" lon="-1.6007745"/>
+      <trkpt lat="51.5246207" lon="-1.6014886"/>
+      <trkpt lat="51.5246500" lon="-1.6016864"/>
+      <trkpt lat="51.5249834" lon="-1.6029045"/>
+      <trkpt lat="51.5251195" lon="-1.6034135"/>
+      <trkpt lat="51.5252413" lon="-1.6039341"/>
+      <trkpt lat="51.5255376" lon="-1.6050398"/>
+      <trkpt lat="51.5256974" lon="-1.6057816"/>
+      <trkpt lat="51.5258767" lon="-1.6066209"/>
+      <trkpt lat="51.5258812" lon="-1.6066420"/>
+      <trkpt lat="51.5260169" lon="-1.6071135"/>
+    </trkseg>
+    <!-- segment 10 of 10: near Dunsden Green - OSM way 34828239, 1066 m, 15 points -->
+    <trkseg>
+      <trkpt lat="51.4867098" lon="-0.9244294"/>
+      <trkpt lat="51.4867199" lon="-0.9246155"/>
+      <trkpt lat="51.4866953" lon="-0.9247394"/>
+      <trkpt lat="51.4866712" lon="-0.9248234"/>
+      <trkpt lat="51.4866486" lon="-0.9248663"/>
+      <trkpt lat="51.4866165" lon="-0.9248940"/>
+      <trkpt lat="51.4878845" lon="-0.9258031"/>
+      <trkpt lat="51.4889021" lon="-0.9265564"/>
+      <trkpt lat="51.4899925" lon="-0.9273918"/>
+      <trkpt lat="51.4911624" lon="-0.9285000"/>
+      <trkpt lat="51.4927130" lon="-0.9302914"/>
+      <trkpt lat="51.4941293" lon="-0.9305229"/>
+      <trkpt lat="51.4944143" lon="-0.9305268"/>
+      <trkpt lat="51.4945329" lon="-0.9305875"/>
+      <trkpt lat="51.4948940" lon="-0.9309911"/>
+    </trkseg>
+  </trk>
+</gpx>
