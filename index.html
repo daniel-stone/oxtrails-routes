@@ -297,20 +297,29 @@
   function showRoute(route){
     layerGroup.clearLayers();
     if(!route) return;
-    var latlngs = route.track.map(function(p){return [p[0],p[1]];});
-    /* The casing is near-invisible against light basemap land (1.15:1), so its job
-       is not contrast but masking: an opaque 9px corridor lifts the route clear of
-       CyclOSM's own dark railway casings and track dashes, which a 4px black line
-       is otherwise easy to mistake for. */
-    L.polyline(latlngs, { color:'#ffffff', weight:9, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
-    L.polyline(latlngs, { color:css('--route'), weight:5, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
-    var a=latlngs[0], b=latlngs[latlngs.length-1];
+    /* A GPX can hold unconnected pieces, so each segment is drawn on its own.
+       One polyline through all of them would put a line on the map along ground
+       nobody rides -- and the builder would have measured it too. */
+    var segs = (route.segments || [route.track] || []).filter(function(s){ return s && s.length; });
+    if(!segs.length) return;
+    var bounds = L.latLngBounds([]);
+    segs.forEach(function(seg){
+      var pts = seg.map(function(p){return [p[0],p[1]];});
+      /* The casing is near-invisible against light basemap land (1.15:1), so its job
+         is not contrast but masking: an opaque 9px corridor lifts the route clear of
+         CyclOSM's own dark railway casings and track dashes, which a 4px black line
+         is otherwise easy to mistake for. */
+      L.polyline(pts, { color:'#ffffff', weight:9, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
+      L.polyline(pts, { color:css('--route'), weight:5, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
+      bounds.extend(pts);
+    });
+    var first=segs[0], last=segs[segs.length-1];
+    var a=[first[0][0], first[0][1]], b=[last[last.length-1][0], last[last.length-1][1]];
     // Start and finish are labels, not controls, so keep them out of the tab order
     describe(L.marker(a, { icon: startIcon(), title:'Start', keyboard:false }).addTo(layerGroup),
       'img', 'Start of route');
     if(farApart(a,b)){ describe(L.marker(b, { icon: finishIcon(), title:'Finish', keyboard:false }).addTo(layerGroup),
       'img', 'Finish of route'); }
-    var bounds=L.latLngBounds(latlngs);
     if(route.photos){ route.photos.forEach(function(ph,pi){
       var m=L.marker([ph.lat,ph.lon], { icon: photoIcon(ph.thumb||ph.src), title: ph.caption||'Photo' });
       var pop=document.createElement('div'); pop.className='photo-pop';

@@ -63,12 +63,30 @@ def haversine_m(a, b):
     return 2 * 6371000.0 * math.asin(math.sqrt(h))
 
 
-def track_distance_km(points):
-    return sum(haversine_m(points[i - 1], points[i]) for i in range(1, len(points))) / 1000.0
+def track_distance_km(segments):
+    """Distance along each segment.
+
+    The gap between one segment and the next was never ridden, so it must not
+    be measured. Joining them added 289km to a 10.8km file.
+    """
+    metres = 0.0
+    for points in segments:
+        metres += sum(haversine_m(points[i - 1], points[i]) for i in range(1, len(points)))
+    return metres / 1000.0
 
 
-def track_ascent_m(points):
-    """Estimated total climb: smooth the elevation trace, then accumulate.
+def track_ascent_m(segments):
+    """Total climb across every segment.
+
+    Per segment, so neither the smoothing window nor the accumulator reads a
+    step between two unconnected pieces as a hill.
+    """
+    climbs = [c for c in (_segment_ascent_m(p) for p in segments) if c is not None]
+    return round(sum(climbs)) if climbs else None
+
+
+def _segment_ascent_m(points):
+    """Estimated climb for one segment: smooth the trace, then accumulate.
 
     The reference height only moves when the track has genuinely gone that far
     up or down, so sensor noise on a flat towpath contributes nothing.
@@ -141,15 +159,26 @@ def simplify(points, tolerance_m=SIMPLIFY_TOLERANCE_M):
 
 
 def parse_gpx(path):
-    """Every trkpt in document order, namespace-agnostic."""
+    """Track points grouped by <trkseg>, namespace-agnostic.
+
+    Segment boundaries carry meaning: a GPX may hold unconnected pieces, and
+    running them together invents both distance and a line on the map that
+    nobody can ride.
+    """
     try:
         tree = ET.parse(path)
     except ET.ParseError as exc:
         raise RouteError(f"route.gpx is not valid XML: {exc}") from exc
 
-    points = []
+    segments = []
+    current = None
     for el in tree.iter():
-        if el.tag.rsplit("}", 1)[-1] != "trkpt":
+        tag = el.tag.rsplit("}", 1)[-1]
+        if tag == "trkseg":
+            current = []
+            segments.append(current)
+            continue
+        if tag != "trkpt":
             continue
         lat, lon = el.get("lat"), el.get("lon")
         if lat is None or lon is None:
@@ -162,13 +191,20 @@ def parse_gpx(path):
                 except ValueError:
                     ele = None
         try:
-            points.append((float(lat), float(lon), ele))
+            point = (float(lat), float(lon), ele)
         except ValueError:
             raise RouteError(f"route.gpx has a track point with non-numeric coordinates: {lat},{lon}")
+        if current is None:          # a trkpt sitting outside any trkseg
+            current = []
+            segments.append(current)
+        current.append(point)
 
-    if len(points) < 2:
-        raise RouteError("route.gpx contains fewer than two track points")
-    return points
+    # A lone point draws nothing and measures nothing. Drop it rather than
+    # reject a file that is otherwise fine.
+    segments = [s for s in segments if len(s) >= 2]
+    if not segments:
+        raise RouteError("route.gpx has no track segment with two or more points")
+    return segments
 
 
 def parse_front_matter(path):
@@ -313,17 +349,19 @@ def load_route(route_dir):
     if meta["type"] not in VALID_TYPES:
         raise RouteError(f"type: must be one of {' or '.join(VALID_TYPES)}, not '{meta['type']}'")
 
-    points = parse_gpx(gpx_path)
+    segments = parse_gpx(gpx_path)
     desc_html, notes_html = split_body(body)
     photos = collect_photos(route_dir, meta)
 
     distance = meta.get("distance")
-    distance_km = float(distance) if distance is not None else round(track_distance_km(points), 1)
+    distance_km = float(distance) if distance is not None else round(track_distance_km(segments), 1)
 
     ascent = meta.get("ascent")
-    ascent_m = int(ascent) if ascent is not None else track_ascent_m(points)
+    ascent_m = int(ascent) if ascent is not None else track_ascent_m(segments)
 
     time_hrs = meta.get("timeHrs")
+
+    drawn = [simplify(seg) for seg in segments]
 
     return {
         "id": route_dir.name,
@@ -338,10 +376,16 @@ def load_route(route_dir):
         "descHtml": desc_html,
         "notesHtml": notes_html,
         "gpx": "route.gpx",
-        "track": [[round(p[0], 6), round(p[1], 6)] for p in simplify(points)],
+        "segments": [[[round(p[0], 6), round(p[1], 6)] for p in seg] for seg in drawn],
+        # Deprecated flattened copy. The page markup is also pasted into
+        # Squarespace, which updates on its own schedule, so a copy still
+        # running the pre-segment script keeps working off this. Drop it
+        # once those embeds have been refreshed.
+        "track": [[round(p[0], 6), round(p[1], 6)] for seg in drawn for p in seg],
         "photos": photos,
         "_dir": route_dir,
-        "_rawPoints": len(points),
+        "_rawPoints": sum(len(seg) for seg in segments),
+        "_segments": len(segments),
     }
 
 
@@ -448,6 +492,7 @@ def main():
         print(
             f"  ok {route['id']}: {route['distanceKm']}km, {ascent}, "
             f"{route['_rawPoints']} pts -> {len(route['track'])} drawn, "
+            f"{route['_segments']} segment(s), "
             f"{len(route['photos'])} photo(s)"
         )
 
