@@ -41,7 +41,7 @@
   .map-pane { position: sticky; top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--card-radius); overflow: hidden; box-shadow: var(--shadow); }
   @media (max-width: 880px) { .map-pane { position: static; } }
   .map-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
-  .map-head .mh-name { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+  .map-head .mh-name { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: -.01em; margin: 0; }
   .map-head .mh-sub { font-size: 12px; color: var(--ink-faint); font-weight: 400; }
   #map { height: clamp(460px, 74vh, 880px); width: 100%; background: var(--grey-soft); z-index: 0; }
   @media (max-width: 880px) { #map { height: clamp(340px, 52vh, 520px); } }
@@ -87,6 +87,7 @@
 
   .route { border: 1px solid var(--line); border-radius: var(--card-radius); background: var(--card); overflow: hidden; transition: border-color .15s, box-shadow .15s; }
   .route.active { border-color: var(--ink); box-shadow: var(--shadow); }
+  .route-h { margin: 0; font-family: var(--body); font-size: 1rem; font-weight: 400; }
   .route-top { display: flex; width: 100%; text-align: left; gap: 15px; padding: 16px; cursor: pointer; background: none; border: none; color: inherit; font: inherit; align-items: center; }
   .idx { flex: none; width: 52px; height: 52px; border-radius: 12px; background: var(--ink); color: #fff; display: grid; place-items: center; line-height: 1; }
   .idx .d { font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
@@ -100,7 +101,8 @@
 
   .route-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .28s ease; }
   .route.active .route-body { grid-template-rows: 1fr; }
-  .route-body-inner { overflow: hidden; }
+  .route-body-inner { overflow: hidden; visibility: hidden; transition: visibility 0s linear .28s; }
+  .route.active .route-body-inner { visibility: visible; transition-delay: 0s; }
   .rb-pad { padding: 2px 16px 17px; border-top: 1px solid var(--line-soft); margin-top: 2px; }
   .desc { color: var(--ink-soft); font-size: 14px; margin: 14px 0; font-weight: 300; }
   .desc strong { color: var(--ink); font-weight: 500; }
@@ -111,6 +113,7 @@
   .desc a, .directions a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
   .status { color: var(--ink-faint); font-size: 13.5px; font-weight: 300; padding: 14px 2px; margin: 0; }
   .status.error { color: var(--ink); }
+  .status:empty { display: none; }
 
   .notes-lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; margin: 0 0 6px; }
   .directions { color: var(--ink-soft); font-size: 13.5px; font-weight: 300; margin: 0 0 16px; }
@@ -127,6 +130,13 @@
 
   footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-faint); font-size: 12.5px; font-weight: 300; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+        clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important; transition-delay: 0s !important; }
+  }
 </style>
 </head>
 <body>
@@ -134,20 +144,22 @@
   <div class="board">
     <section class="map-pane" aria-label="Route map">
       <div class="map-head">
-        <span class="mh-name" id="mhName">Select a route</span>
+        <h2 class="mh-name" id="mhName">Select a route</h2>
         <span class="mh-sub" id="mhSub">Oxfordshire</span>
       </div>
       <div id="map"></div>
     </section>
 
     <section class="routes-pane" aria-label="Route list">
+      <h2 class="vh">Routes</h2>
       <div class="rp-head">
-        <div class="filters" id="filters">
-          <button data-f="all" class="on">All</button>
-          <button data-f="circular">Circular</button>
-          <button data-f="ptp">Point-to-point</button>
+        <div class="filters" id="filters" role="group" aria-label="Filter routes by type">
+          <button type="button" data-f="all" class="on" aria-pressed="true">All</button>
+          <button type="button" data-f="circular" aria-pressed="false">Circular</button>
+          <button type="button" data-f="ptp" aria-pressed="false">Point-to-point</button>
         </div>
       </div>
+      <p class="status" id="listStatus" role="status" aria-live="polite"></p>
       <div id="routeList"></div>
     </section>
   </div>
@@ -158,7 +170,7 @@
   </footer>
 </div>
 
-<div id="lightbox" class="lightbox" aria-hidden="true" role="dialog" aria-label="Photo viewer">
+<div id="lightbox" class="lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Photo viewer">
   <button class="lb-close" type="button" aria-label="Close">&times;</button>
   <button class="lb-nav lb-prev" type="button" aria-label="Previous photo">&lsaquo;</button>
   <button class="lb-nav lb-next" type="button" aria-label="Next photo">&rsaquo;</button>
@@ -226,33 +238,57 @@
     html:'<div class="finish-pin" style="width:24px;height:24px;background:repeating-conic-gradient(#111 0 25%, #fff 0 50%) 50%/8px 8px"></div>' }); }
   function photoIcon(thumb){ return L.divIcon({ className:'', iconSize:[40,40], iconAnchor:[20,20],
     html:'<div class="photo-pin" style="background-image:url(&quot;'+esc(thumb)+'&quot;)"></div>' }); }
+  /* Leaflet only applies its `alt` option to L.Icon, so divIcon markers reach the
+     accessibility tree unnamed. Label the marker element itself instead. */
+  function describe(marker, role, label){
+    var el = marker.getElement();
+    if(el){ el.setAttribute('role', role); el.setAttribute('aria-label', label); }
+  }
 
   /* ---- Lightbox ---- */
   var lb=document.getElementById("lightbox"), lbImg=document.getElementById("lbImg"), lbCap=document.getElementById("lbCap");
   var lbPrev=lb.querySelector(".lb-prev"), lbNext=lb.querySelector(".lb-next");
-  var lbList=[], lbIdx=0;
+  var lbCloseBtn=lb.querySelector(".lb-close");
+  var lbList=[], lbIdx=0, lbReturn=null;
+  function lbFocusable(){ return [].filter.call(lb.querySelectorAll("button"),
+    function(b){ return b.offsetParent !== null; }); }
   function lbShow(){ var p=lbList[lbIdx]; if(!p)return; lbImg.src=p.src; lbImg.alt=p.caption||""; lbCap.textContent=p.caption||"";
     var multi=lbList.length>1; lbPrev.style.display=multi?"grid":"none"; lbNext.style.display=multi?"grid":"none"; }
-  function lbOpen(list,idx){ lbList=list||[]; lbIdx=idx||0; lbShow(); lb.classList.add("open"); lb.setAttribute("aria-hidden","false"); }
-  function lbClose(){ lb.classList.remove("open"); lb.setAttribute("aria-hidden","true"); lbImg.removeAttribute("src"); }
+  function lbOpen(list,idx){ lbReturn=document.activeElement;
+    lbList=list||[]; lbIdx=idx||0; lbShow(); lb.classList.add("open"); lb.setAttribute("aria-hidden","false");
+    lbCloseBtn.focus(); }
+  function lbClose(){ lb.classList.remove("open"); lb.setAttribute("aria-hidden","true"); lbImg.removeAttribute("src");
+    if(lbReturn && lbReturn.focus) lbReturn.focus();   // back to the pin that opened it
+    lbReturn=null; }
   function lbNav(d){ if(!lbList.length)return; lbIdx=(lbIdx+d+lbList.length)%lbList.length; lbShow(); }
   lb.addEventListener("click",function(e){ if(e.target===lb) lbClose(); });
-  lb.querySelector(".lb-close").addEventListener("click",lbClose);
+  lbCloseBtn.addEventListener("click",lbClose);
   lbPrev.addEventListener("click",function(e){ e.stopPropagation(); lbNav(-1); });
   lbNext.addEventListener("click",function(e){ e.stopPropagation(); lbNav(1); });
   document.addEventListener("keydown",function(e){ if(!lb.classList.contains("open"))return;
-    if(e.key==="Escape")lbClose(); else if(e.key==="ArrowLeft")lbNav(-1); else if(e.key==="ArrowRight")lbNav(1); });
+    if(e.key==="Escape"){ lbClose(); }
+    else if(e.key==="ArrowLeft"){ lbNav(-1); }
+    else if(e.key==="ArrowRight"){ lbNav(1); }
+    else if(e.key==="Tab"){                      // keep focus inside the dialog
+      var f=lbFocusable(); if(!f.length) return;
+      var first=f[0], last=f[f.length-1], cur=document.activeElement, out=!lb.contains(cur);
+      if(e.shiftKey ? (out || cur===first) : (out || cur===last)){
+        e.preventDefault(); (e.shiftKey ? last : first).focus(); } } });
 
   /* ---- Full-screen map toggle ---- */
   var EXPAND_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
   var COMPRESS_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
   var mapPaneEl=document.querySelector('.map-pane'), fsBtn=null;
-  function setFullscreen(on){ mapPaneEl.classList.toggle('is-fullscreen',on); if(fsBtn){ fsBtn.innerHTML=on?COMPRESS_SVG:EXPAND_SVG; fsBtn.title=on?'Exit full screen':'Full screen'; }
+  function setFullscreen(on){ mapPaneEl.classList.toggle('is-fullscreen',on); if(fsBtn){ fsBtn.innerHTML=on?COMPRESS_SVG:EXPAND_SVG; fsBtn.title=on?'Exit full screen':'Full screen';
+      fsBtn.setAttribute('aria-label',on?'Exit full screen':'Full screen'); fsBtn.setAttribute('aria-pressed',on?'true':'false'); }
     document.body.style.overflow=on?'hidden':''; setTimeout(function(){ map.invalidateSize(); },80); }
   var Fullscreen=L.Control.extend({ options:{position:'topleft'},
     onAdd:function(){ var c=L.DomUtil.create('div','leaflet-bar fs-ctrl'); var a=L.DomUtil.create('a','',c);
-      a.href='#'; a.setAttribute('role','button'); a.setAttribute('aria-label','Full screen'); a.title='Full screen'; a.innerHTML=EXPAND_SVG; fsBtn=a;
-      L.DomEvent.on(a,'click',L.DomEvent.stop); L.DomEvent.on(a,'click',function(){ setFullscreen(!mapPaneEl.classList.contains('is-fullscreen')); });
+      a.href='#'; a.setAttribute('role','button'); a.setAttribute('aria-label','Full screen'); a.setAttribute('aria-pressed','false'); a.title='Full screen'; a.innerHTML=EXPAND_SVG; fsBtn=a;
+      function toggle(){ setFullscreen(!mapPaneEl.classList.contains('is-fullscreen')); }
+      L.DomEvent.on(a,'click',L.DomEvent.stop); L.DomEvent.on(a,'click',toggle);
+      // role=button promises Space activates it, which an anchor will not do by itself
+      L.DomEvent.on(a,'keydown',function(ev){ if(ev.key===' '||ev.key==='Spacebar'){ L.DomEvent.stop(ev); toggle(); } });
       return c; } });
   map.addControl(new Fullscreen());
   document.addEventListener('keydown',function(e){ if(e.key==='Escape' && mapPaneEl.classList.contains('is-fullscreen') && !lb.classList.contains('open')) setFullscreen(false); });
@@ -269,8 +305,11 @@
     L.polyline(latlngs, { color:'#ffffff', weight:9, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
     L.polyline(latlngs, { color:css('--route'), weight:5, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
     var a=latlngs[0], b=latlngs[latlngs.length-1];
-    L.marker(a, { icon: startIcon(), title:'Start' }).addTo(layerGroup);
-    if(farApart(a,b)){ L.marker(b, { icon: finishIcon(), title:'Finish' }).addTo(layerGroup); }
+    // Start and finish are labels, not controls, so keep them out of the tab order
+    describe(L.marker(a, { icon: startIcon(), title:'Start', keyboard:false }).addTo(layerGroup),
+      'img', 'Start of route');
+    if(farApart(a,b)){ describe(L.marker(b, { icon: finishIcon(), title:'Finish', keyboard:false }).addTo(layerGroup),
+      'img', 'Finish of route'); }
     var bounds=L.latLngBounds(latlngs);
     if(route.photos){ route.photos.forEach(function(ph,pi){
       var m=L.marker([ph.lat,ph.lon], { icon: photoIcon(ph.thumb||ph.src), title: ph.caption||'Photo' });
@@ -283,6 +322,7 @@
       pop.querySelector('img').addEventListener('click', openFull);
       m.bindPopup(pop, { maxWidth: 260 });
       m.addTo(layerGroup);
+      describe(m, 'button', ph.caption ? 'Photo: '+ph.caption : 'Photo '+(pi+1)+' on this route');
       bounds.extend([ph.lat,ph.lon]);
     }); }
     map.invalidateSize();
@@ -290,7 +330,13 @@
   }
 
   /* ---- List ---- */
-  var listEl=document.getElementById("routeList");
+  var listEl=document.getElementById("routeList"), statusEl=document.getElementById("listStatus");
+  /* One region that lives in the DOM from the start: a role=status element
+     injected alongside its message is often missed by screen readers. */
+  function setStatus(msg, isError){
+    statusEl.textContent = msg || "";
+    statusEl.classList.toggle("error", !!isError);
+  }
   var summaries=[], cards={}, detailCache={}, activeId=null, filter="all";
   function mi(km){return km*0.621371;} // distances are stored in km, displayed in miles
   function fmtHours(h){ var m=Math.round(h*60);
@@ -304,16 +350,17 @@
   function buildCard(s){
     var el=document.createElement("article");
     el.className="route";
+    var bodyId="rbody-"+s.id;
     el.innerHTML=
-      '<button class="route-top" aria-expanded="false">'
+      '<h3 class="route-h"><button type="button" class="route-top" aria-expanded="false" aria-controls="'+esc(bodyId)+'">'
       +'<span class="idx"><span class="d">'+mi(s.distanceKm).toFixed(1)+'</span><span class="u">miles</span></span>'
       +'<span class="route-id"><span class="name">'+esc(s.name)+'</span><span class="meta">'
         +'<span class="type-chip">'+(s.type==="circular"?"◯ Circular":"→ Point-to-point")+'</span>'
         +(s.ascentM!=null?'<span><b>'+s.ascentM+' m</b> climb</span>':'')
         +(s.timeHrs!=null?'<span>about <b>'+fmtHours(s.timeHrs)+'</b></span>':'')
         +(s.photoCount?'<span><b>'+s.photoCount+'</b> photo'+(s.photoCount>1?'s':'')+'</span>':'')
-      +'</span></span><span class="chev" aria-hidden="true">▾</span></button>'
-      +'<div class="route-body"><div class="route-body-inner"><div class="rb-pad"></div></div></div>';
+      +'</span></span><span class="chev" aria-hidden="true">▾</span></button></h3>'
+      +'<div class="route-body" id="'+esc(bodyId)+'"><div class="route-body-inner"><div class="rb-pad"></div></div></div>';
     var btn=el.querySelector(".route-top");
     btn.addEventListener("click",function(){ select(s.id); });
     cards[s.id]={ el:el, btn:btn, pad:el.querySelector(".rb-pad") };
@@ -323,8 +370,18 @@
   function renderList(){
     listEl.innerHTML=""; cards={};
     var shown=summaries.filter(function(s){return filter==="all"||s.type===filter;});
-    if(!shown.length){ listEl.innerHTML='<p class="status">No routes in this category yet.</p>'; return; }
+    /* The open route can fall outside the new filter. Without this its track stays
+       drawn and its name stays in the map header with no card to match. */
+    if(activeId && !shown.some(function(s){return s.id===activeId;})){
+      activeId=null; setHead(null); layerGroup.clearLayers();
+    }
+    if(!shown.length){ setStatus("No routes in this category yet."); return; }
+    setStatus("");
     shown.forEach(function(s){ listEl.appendChild(buildCard(s)); });
+    // Rebuilding threw away the open card's body; refill it before marking it expanded
+    if(activeId && cards[activeId] && detailCache[activeId]){
+      cards[activeId].pad.innerHTML=bodyHtml(detailCache[activeId]);
+    }
     applyActive();
   }
 
@@ -382,19 +439,22 @@
   }
 
   document.getElementById("filters").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
-    filter=b.getAttribute("data-f");[].forEach.call(this.querySelectorAll("button"),function(x){x.classList.toggle("on",x===b);});renderList();});
+    filter=b.getAttribute("data-f");
+    [].forEach.call(this.querySelectorAll("button"),function(x){ var on=(x===b);
+      x.classList.toggle("on",on); x.setAttribute("aria-pressed",on?"true":"false"); });
+    renderList();});
 
-  listEl.innerHTML='<p class="status">Loading routes…</p>';
+  setStatus("Loading routes…");
   getJSON(DATA_BASE+"index.json").then(function(data){
     summaries=data.routes||[];
-    if(!summaries.length){ listEl.innerHTML='<p class="status">No routes published yet.</p>'; return; }
+    if(!summaries.length){ setStatus("No routes published yet."); return; }
     // Hide the filter bar until there is enough to filter
     if(summaries.length<2){ document.getElementById("filters").style.display="none"; }
     renderList();
     select(summaries[0].id);
   }).catch(function(err){
-    listEl.innerHTML='<p class="status error">Could not load the route list ('+esc(err.message)
-      +'). If this keeps happening the map data may have moved.</p>';
+    setStatus("Could not load the route list ("+err.message
+      +"). If this keeps happening the map data may have moved.", true);
   });
 })();
 </script>
