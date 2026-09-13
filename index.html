@@ -15,9 +15,10 @@
     --card: #FFFFFF;
     --ink: #0C0C0C;
     --ink-soft: #55565A;
-    --ink-faint: #8B8C90;
+    --ink-faint: #6E6F73;
     --line: #E3E3E3;
     --line-soft: #ECECEC;
+    --line-strong: #949494;
     --grey: #D9D9D9;
     --grey-soft: #EDEDED;
     --route: #0C0C0C;
@@ -80,7 +81,7 @@
   .routes-pane { display: flex; flex-direction: column; gap: 14px; }
   .rp-head { display: flex; align-items: center; justify-content: flex-start; gap: 12px; flex-wrap: wrap; }
   .filters { display: flex; gap: 7px; flex-wrap: wrap; }
-  .filters button { font-family: var(--body); font-weight: 500; font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink-soft); transition: all .15s; }
+  .filters button { font-family: var(--body); font-weight: 500; font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer; border: 1px solid var(--line-strong); background: var(--card); color: var(--ink-soft); transition: all .15s; }
   .filters button:hover { border-color: var(--ink); color: var(--ink); }
   .filters button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
 
@@ -219,10 +220,10 @@
   window.addEventListener('load', function(){ map.invalidateSize(); });
 
   var layerGroup = L.layerGroup().addTo(map);
-  function startIcon(){ return L.divIcon({ className:'', iconSize:[22,22], iconAnchor:[11,11],
-    html:'<div class="start-pin" style="width:22px;height:22px;background:'+css('--ink')+'">S</div>' }); }
-  function finishIcon(){ return L.divIcon({ className:'', iconSize:[22,22], iconAnchor:[11,11],
-    html:'<div class="finish-pin" style="width:22px;height:22px;background:repeating-conic-gradient(#111 0 25%, #fff 0 50%) 50%/8px 8px"></div>' }); }
+  function startIcon(){ return L.divIcon({ className:'', iconSize:[24,24], iconAnchor:[12,12],
+    html:'<div class="start-pin" style="width:24px;height:24px;background:'+css('--ink')+'">S</div>' }); }
+  function finishIcon(){ return L.divIcon({ className:'', iconSize:[24,24], iconAnchor:[12,12],
+    html:'<div class="finish-pin" style="width:24px;height:24px;background:repeating-conic-gradient(#111 0 25%, #fff 0 50%) 50%/8px 8px"></div>' }); }
   function photoIcon(thumb){ return L.divIcon({ className:'', iconSize:[40,40], iconAnchor:[20,20],
     html:'<div class="photo-pin" style="background-image:url(&quot;'+esc(thumb)+'&quot;)"></div>' }); }
 
@@ -261,8 +262,12 @@
     layerGroup.clearLayers();
     if(!route) return;
     var latlngs = route.track.map(function(p){return [p[0],p[1]];});
-    L.polyline(latlngs, { color:'#ffffff', weight:7, opacity:.9, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
-    L.polyline(latlngs, { color:css('--route'), weight:4, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
+    /* The casing is near-invisible against light basemap land (1.15:1), so its job
+       is not contrast but masking: an opaque 9px corridor lifts the route clear of
+       CyclOSM's own dark railway casings and track dashes, which a 4px black line
+       is otherwise easy to mistake for. */
+    L.polyline(latlngs, { color:'#ffffff', weight:9, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
+    L.polyline(latlngs, { color:css('--route'), weight:5, opacity:1, lineJoin:'round', lineCap:'round' }).addTo(layerGroup);
     var a=latlngs[0], b=latlngs[latlngs.length-1];
     L.marker(a, { icon: startIcon(), title:'Start' }).addTo(layerGroup);
     if(farApart(a,b)){ L.marker(b, { icon: finishIcon(), title:'Finish' }).addTo(layerGroup); }
